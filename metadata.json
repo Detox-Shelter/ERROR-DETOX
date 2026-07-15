@@ -1,0 +1,6 @@
+{
+  "name": "Service SW Brainstorming Worksheet",
+  "description": "A structured brainstorming worksheet for Service Software Engineers using TRIZ, SCAMPER, and ERRC frameworks, integrated with Google Drive to save and load worksheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
