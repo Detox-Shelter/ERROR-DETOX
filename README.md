@@ -1,20 +1,114 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🌿 초록빛 에러 디톡스 가든 & 서비스 SW 브레인스토밍 워크시트
+> **Greenish Error Detox Garden & Service SW Brainstorming Worksheet**
 
-# Run and deploy your AI Studio app
+개발에 지친 엔지니어를 위한 감성적 **힐링 에러 정화소**입니다.
 
-This contains everything you need to run your app locally.
+실제 개발 과정에서 겪는 불쾌하고 좌절스러운 오류 로그를 비옥한 거름(퇴비) 삼아 푸른 가상 정원 식물들을 길러내고, 구글 드라이브(Google Drive) 및 파이어베이스(Firebase Auth)를 활용해 아키텍처 워크시트를 안전하게 관리해 보세요.
 
-View your app in AI Studio: https://ai.studio/apps/6301dfc0-3b35-437c-b669-3ba85abdb00f
+---
 
-## Run Locally
+## 🎨 핵심 디자인 철학 & UX 콘셉트
 
-**Prerequisites:**  Node.js
+*   **보태니컬 미학 (Botanical Aesthetics):** 지친 눈과 지친 마음에 안정을 주는 부드러운 화이트, 딥 차콜 그레이, 그리고 올리브/에메랄드 그린 컬러 팔레트를 바탕으로 고도의 여백의 미를 구현하였습니다.
+*   **공감과 은유 (Empathy & Metaphor):** 단순한 에러 디버깅 봇이 아닙니다. 에러 종류에 맞는 식물의 생태적 습성(유칼립투스의 허브 정화력, 대나무의 유연성, 몬스테라의 넓은 잎, 아이비의 강인한 생명력)을 은유하여 마음을 위로하고 지혜로운 디버깅 경로를 안내합니다.
+*   **인터랙티브 자연 사운드 (Web Audio Synthesis):** Web Audio API를 활용해 인공적인 미디어 파일 로드 없이 즉석에서 생성되는 숲속의 바람, 가랑비, 산뜻한 새소리 사운드를 온·오프 조절하여 완벽한 청각적 디톡스 환경을 조성합니다.
+*   **유기적인 가이드라인:** 사용자가 길을 잃지 않도록 스무스 스크롤링 및 자동 포커스가 장착된 플로팅 바로가기 버튼(FAB)과 세심한 보태니컬 모달 가이드가 동반됩니다.
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 주요 기능
+
+### 1. 🪴 에러 퇴비화 정원 (Error Composting Garden)
+*   **에러 퇴비화 (Composting):** 붉은 경고 에러 로그나 시스템 병목 코드를 기입하고 감정 지수를 표현해 비워내면, **Gemini API** 기반의 정원사가 분석을 시작합니다.
+*   **디톡스 요약 카드:** 정화 완료 시 상단에 에러 원인, 내용, 핵심 해결책이 한눈에 파악될 수 있게 요약된 카드형 블록을 직관적으로 제공합니다.
+*   **생태적 식물 성장 비유:** 
+    *   *유칼립투스(비동기/동시성/스레드 에러)*
+    *   *대나무(인프라/네트워크/배포 에러)*
+    *   *몬스테라(데이터베이스/정체 에러)*
+    *   *아이비(레거시/스파게티 코드 에러)*
+*   **실시간 자연 백그라운드 노이즈:** 브라우저 오디오 엔진을 통해 생성되는 바람, 비, 새소리 ASMR 기능.
+*   **정원 테라리움 성장 상태:** 정화한 에러 개수에 따라 정원의 레벨(씨앗 밭 → 푸른 새싹 온실 → 비밀의 정원 → 울창한 테라리움 숲)이 확장되며, 숨겨진 6종의 가드너 배지를 해금할 수 있습니다.
+
+### 2. 📝 서비스 SW 브레인스토밍 워크시트
+*   **4대 프레임워크 지원:**
+    1.  **Pain Points:** 서비스와 소프트웨어의 명확한 고통 지점 및 개선 대상 정의.
+    2.  **TRIZ:** 모순 분리, 발명 원리를 활용한 기술적 돌파구 탐색.
+    3.  **SCAMPER:** 대체(S), 결합(C), 조절(A), 변경(M), 용도 변경(P), 제거(E), 역발상(R)을 통한 아이디어 발상.
+    4.  **ERRC:** 제거(Eliminate), 감소(Reduce), 향상(Raise), 창조(Create) 매트릭스를 기반으로 한 가치 혁신 공식화.
+*   **Google Drive 연동:** 구글 워크스페이스 OAuth 연동을 통해 브레인스토밍 중인 워크시트를 JSON 형태로 드라이브 상에 안전하게 저장하고 다시 불러올 수 있습니다.
+*   **Firebase 연동:** 구글 간편 인증을 통해 개인의 고유한 테라리움 및 워크시트 정원 관리 상태를 매끄럽게 동기화합니다.
+
+---
+
+## 🛠️ 기술 스택 (Tech Stack)
+
+### Client-side (프론트엔드)
+*   **React 19 & TypeScript:** 강력한 타입 안정성과 컴포넌트 생명 주기를 이용한 고성능 UI 구축.
+*   **Tailwind CSS (v4):** 유틸리티 클래스 기반의 빠른 레이아웃 조정 및 극도의 디테일 디자인.
+*   **Motion (Framer Motion):** 탭 전환, 플로팅 버튼 등장, 식물 정화 시 시각적으로 매끄러운 트랜지션 처리.
+*   **Lucide React:** 일관되고 아름다운 벡터 스타일 시스템 아이콘 적용.
+*   **Web Audio API:** 노이즈 생성 알고리즘 기반의 인터랙티브 사운드 신디사이저.
+
+### Server-side (백엔드)
+*   **Express & Node.js:** 로컬 및 컨테이너 환경의 요청 서빙 및 정적 자원 관리.
+*   **tsx & esbuild:** TypeScript 코드를 빌드하고 고속 런타임 번들링(`dist/server.cjs`)을 수행하기 위한 파이프라인.
+*   **@google/genai SDK:** 서버 측 프록시를 통해 `process.env.GEMINI_API_KEY` 보안 키 유출 없이 실시간 고품질의 자연어 치유 가이드를 호출하는 구조.
+
+---
+
+## 💻 설치 및 로컬 실행 방법
+
+### 1. 환경 변수 설정
+루트 디렉토리에 `.env` 파일을 생성하거나 플랫폼에 다음 변수를 설정해 주세요.
+```env
+# .env.example 복사본 및 실제 구동용 키 지정
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### 2. 패키지 설치
+```bash
+npm install
+```
+
+### 3. 개발 서버 구동 (Vite + Express Proxy)
+포트 `3000` 번을 통해 전체 개발 및 API 라우팅을 지원하는 통합 서버를 실행합니다.
+```bash
+npm run dev
+```
+
+### 4. 프로덕션 빌드 및 실행
+```bash
+# 빌드 실행 (Client & Server 패키징)
+npm run build
+
+# 서비스 시작
+npm run start
+```
+
+---
+
+## 📂 디렉토리 구조 주요 요약
+```
+├── server.ts                 # Express 백엔드 서버 및 Gemini API 연동 라우트
+├── package.json              # 의존성 라이브러리 및 스크립트 선언
+├── metadata.json             # AI Studio 앱 명세 및 권한 메타데이터
+├── src/
+│   ├── App.tsx               # 최상단 엔트리 컴포넌트 (Firebase 로그인 및 기본 레이아웃)
+│   ├── main.tsx              # React 마운트 엔트리
+│   ├── index.css             # Tailwind CSS 전역 수입 및 테마 폰트 바인딩
+│   ├── drive.ts              # Google Drive 파일 저장/불러오기 API 바인딩
+│   ├── firebase.ts           # Firebase Auth 초기화 및 인증 핸들러
+│   ├── components/
+│   │   ├── DetoxLandingPage.tsx  # 정원 탭 및 워크시트 대시보드 총괄 코어 컴포넌트
+│   │   ├── ErrorDetoxGarden.tsx  # 에러 퇴비화 정원 서브 레이아웃 및 웹오디오 조율
+│   │   ├── Dashboard.tsx         # 브레인스토밍 대시보드 및 단계 관리
+│   │   ├── GuideModal.tsx        # 식물 생태 가이드 도움말 팝업
+│   │   ├── Header.tsx            # 브랜드 네비게이션 헤더
+│   │   └── ...                   # PainPoint, Triz, Scamper, Errc 등 단계별 시트 컴포넌트
+```
+
+---
+
+## 🍃 지속 가능한 개발을 위하여
+
+초록빛 에러 디톡스 가든은 개발 과정에서 생기는 오류를 단순한 장애 요소로 보지 않고, 더 훌륭한 엔지니어로 거듭나기 위한 **자연적인 퇴비**로 재해석합니다. 버그에 지칠 때마다, 정원에 에러를 묻고 따스한 빗소리와 함께 힐링해 보시기 바랍니다!
