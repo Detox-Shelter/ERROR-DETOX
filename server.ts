@@ -20,12 +20,42 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // 1. Basic Security Headers to prevent common vulnerabilities
+  app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
+    next();
+  });
+
+  // 2. Limit the body payload size to prevent DoS (Denial of Service) attacks
+  app.use(express.json({ limit: "150kb" }));
 
   // API Route: Green Mind Refresh & Botanical Debugging
   app.post("/api/gemini/refresh", async (req, res) => {
     try {
       const { errorLog, frustration, selectedSeed } = req.body;
+
+      // 3. Strict Input Type and Value Validation
+      if (
+        (errorLog !== undefined && typeof errorLog !== "string") ||
+        (frustration !== undefined && typeof frustration !== "string") ||
+        (selectedSeed !== undefined && typeof selectedSeed !== "string")
+      ) {
+        return res.status(400).json({ error: "올바르지 않은 입력 형식입니다." });
+      }
+
+      // Check for valid seed value
+      const validSeeds = ["eucalyptus", "bamboo", "monstera", "ivy"];
+      if (selectedSeed && !validSeeds.includes(selectedSeed)) {
+        return res.status(400).json({ error: "올바르지 않은 씨앗 선택입니다." });
+      }
+
+      // 4. Safe limit string lengths to prevent massive payload processing by Gemini API
+      const safeErrorLog = (errorLog || "").slice(0, 4000);
+      const safeFrustration = (frustration || "").slice(0, 1000);
+      const safeSelectedSeed = selectedSeed || "eucalyptus";
 
       if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({
@@ -40,7 +70,7 @@ async function startServer() {
         monstera: "몬스테라 (Monstera - 시원하고 큼직한 잎사귀, 넓은 그늘과 리소스/DB 병목 정화)",
         ivy: "아이비 넝쿨 (Ivy - 지저분하게 엉키며 자라는 강인한 생명력, 레거시 스파게티 극복)"
       };
-      const chosenSeedLabel = seedNameMap[selectedSeed] || "싱그러운 치유목";
+      const chosenSeedLabel = seedNameMap[safeSelectedSeed] || "싱그러운 치유목";
 
       const prompt = `
 사용자는 지친 서비스 소프트웨어 개발자입니다. 에러나 버그 때문에 심란하고 피로한 상태입니다.
@@ -48,8 +78,8 @@ async function startServer() {
 
 [상황 데이터]
 - 개발자가 가꾸기로 선택한 씨앗: ${chosenSeedLabel}
-- 개발자가 마주한 에러 또는 상황: "${errorLog || '에러 내용 없음'}"
-- 개발자의 심정/메시지: "${frustration || '마음이 답답합니다.'}"
+- 개발자가 마주한 에러 또는 상황: "${safeErrorLog || '에러 내용 없음'}"
+- 개발자의 심정/메시지: "${safeFrustration || '마음이 답답합니다.'}"
 
 [작성 지침]
 0. **[가장 중요 - 최상단 요약 박스]** 본문을 시작하기 전에, 에러 본문의 **가장 최상단**에 반드시 아래 포맷 그대로의 **한눈에 보는 에러 디톡스 요약 카드/블록**을 최우선적으로 작성해 주세요. 이후 한 줄을 비우고 구분선(\`---\`)을 표시한 뒤 다정한 대화와 위로 본문을 작성해야 합니다.
