@@ -66,11 +66,11 @@ interface GardenLog {
 
 // Static lists for seed species and zen reflections
 const SEED_OPTIONS = [
-  { id: 'recommend', label: '✨ 자동 추천 씨앗', desc: '정원사가 에러를 진단하여 어울리는 씨앗을 직접 가꾸어 드립니다', titlePrefix: '추천받은 치유목' },
-  { id: 'eucalyptus', label: '🌿 유칼립투스', desc: '스레드/비동기 버그 정화', titlePrefix: '차분한 유칼립투스' },
-  { id: 'bamboo', label: '🎋 대나무 새싹', desc: '네트워크/인프라 대치', titlePrefix: '곧은 대나무 새싹' },
-  { id: 'monstera', label: '🪴 몬스테라', desc: '메모리/데이터베이스 정체', titlePrefix: '풍성한 몬스테라' },
-  { id: 'ivy', label: '🍀 아이비 넝쿨', desc: '스파게티/레거시 실타래', titlePrefix: '강인한 아이비 넝쿨' }
+  { id: 'recommend', label: '✨ 자동 추천 씨앗', desc: '정원사 AI가 에러를 분석해 마음에 위로를 줄 가장 좋은 씨앗을 추천해 줍니다', titlePrefix: '추천받은 치유목' },
+  { id: 'eucalyptus', label: '🌿 유칼립투스', desc: '시간 지연이나 로딩이 멈추는 에러 정화', titlePrefix: '차분한 유칼립투스' },
+  { id: 'bamboo', label: '🎋 대나무 새싹', desc: '서버 연결이나 인터넷이 끊기는 에러 정화', titlePrefix: '곧은 대나무 새싹' },
+  { id: 'monstera', label: '🪴 몬스테라', desc: '용량이 꽉 차거나 데이터가 무거울 때의 에러 정화', titlePrefix: '풍성한 몬스테라' },
+  { id: 'ivy', label: '🍀 아이비 넝쿨', desc: '엉키고 꼬인 해결하기 힘든 옛날 코드 정화', titlePrefix: '강인한 아이비 넝쿨' }
 ];
 
 const ZEN_QUOTES = [
@@ -578,7 +578,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
             noteName
           }
         ].slice(-25));
-      }, 1400 + Math.random() * 800);
+      }, 450 + Math.random() * 350); // Faster, more musical drip interval (450ms - 800ms)
     } else {
       if (autoRainIntervalRef.current) {
         clearInterval(autoRainIntervalRef.current);
@@ -804,9 +804,9 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
 
   const getBreathPhaseLabel = () => {
     switch (breathPhase) {
-      case 'inhale': return '깊이 들이마시세요... (Inhale)';
-      case 'hold': return '숨을 잠시 멈춥니다... (Hold)';
-      case 'exhale': return '천천히 비워냅니다... (Exhale)';
+      case 'inhale': return '코로 숨을 깊게 들이마시세요... 🌿';
+      case 'hold': return '숨을 잠시 멈추고 온기를 느끼세요... ✨';
+      case 'exhale': return '입으로 후- 하고 걱정을 내보내세요... 🍃';
       default: return '호흡 준비 완료';
     }
   };
@@ -1063,38 +1063,38 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                   </div>
 
                   <div className="space-y-1.5 relative z-10">
-                    <span className="text-4xs font-bold font-mono px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded uppercase">Stage 01</span>
-                    <h3 className="text-lg font-bold text-emerald-950 font-display">에러 퇴비화 분갈이 (Error Composting)</h3>
+                    <span className="text-4xs font-bold font-mono px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded uppercase">1단계: 씨앗 가꾸기</span>
+                    <h3 className="text-lg font-bold text-emerald-950 font-display">에러 묻고 정원 가꾸기 🪴</h3>
                     <p className="text-3xs text-emerald-800/80 leading-relaxed font-medium">
-                      빨간색 경고창이나 머리를 아프게 만드는 만성 병목 현상을 가차 없이 흙 속에 집어던져 영양 가득한 퇴비로 삼으세요. 
-                      정원사 AI가 마음의 수분을 맞춰 따스한 가이드로 보살펴 줍니다.
+                      빨간 에러 메시지나 나를 괴롭히는 버그를 가만히 정원 흙 속에 묻어주세요. 
+                      따스한 마음 위로와 함께 싱그러운 식물 가이드로 바꾸어 드립니다.
                     </p>
                   </div>
 
                   <form onSubmit={handleCompostSubmit} className="space-y-4 pt-3 relative z-10" id="compost-form">
                     <div className="space-y-1.5">
                       <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                        붉은 경고 로그 또는 부하 원인 (Error / Bottleneck)
+                        나를 힘들게 한 에러 메시지나 코드 (에러 코드)
                       </label>
                       <textarea
                         ref={errorLogTextareaRef}
                         id="error-compost-textarea"
                         value={errorLog}
                         onChange={(e) => setErrorLog(e.target.value)}
-                        placeholder="예: OutOfMemoryError, DB Connection Timeout, 혹은 도저히 마음에 안 드는 스파게티 레거시 코드 흐름을 적어주세요..."
+                        placeholder="예: OutOfMemoryError, DB Connection Timeout, 혹은 머리를 아프게 하는 코드 내용을 적어주세요..."
                         className="w-full h-36 p-3 text-xs bg-emerald-50/25 border border-emerald-100 rounded-2xl focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 transition-all font-mono placeholder:text-emerald-900/30 shadow-3xs"
                       />
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                        에러를 마주하고 지친 마음 한 토막 (Mental Frustration)
+                        지금 내 솔직한 기분이나 힘든 점 (마음 일기)
                       </label>
                       <input
                         type="text"
                         value={frustration}
                         onChange={(e) => setFrustration(e.target.value)}
-                        placeholder="예: 3시간째 이 코드를 쥐고 씨름 중이라 퇴근이 늦어지고 머리가 무겁습니다."
+                        placeholder="예: 오늘 안에 끝내고 싶은데 3시간째 이 에러로 퇴근이 늦어져 머리가 답답합니다."
                         className="w-full px-3.5 py-3 text-xs bg-emerald-50/20 border border-emerald-100 rounded-2xl focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300 transition-all placeholder:text-emerald-900/30 font-medium"
                       />
                     </div>
@@ -1102,7 +1102,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                     {/* Seed Species Selection Button Group */}
                     <div className="space-y-2">
                       <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                        영양분으로 치유할 식물 씨앗 선택 (Choose Seed Species)
+                        함께 키우고 싶은 초록 식물 선택
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         {SEED_OPTIONS.map((seed) => (
@@ -1114,8 +1114,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                               seed.id === 'recommend' ? 'col-span-2 bg-gradient-to-r from-emerald-50/20 to-emerald-50/10' : 'bg-white'
                             } ${
                               selectedSeed === seed.id
-                                ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500 shadow-3xs'
-                                : 'hover:bg-emerald-50/30 border-emerald-100'
+                                  ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500 shadow-3xs'
+                                  : 'hover:bg-emerald-50/30 border-emerald-100'
                             }`}
                           >
                             <span className="text-2xs font-extrabold text-emerald-950 block">{seed.label}</span>
@@ -1134,11 +1134,11 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                         {isComposting ? (
                           <>
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>퇴비 삭히는 중 (API 분석)...</span>
+                            <span>에러 정화하고 싹 틔우는 중...</span>
                           </>
                         ) : (
                           <>
-                            <span>에러 묻고 싹 틔우기</span>
+                            <span>에러 정화하고 조언 받기</span>
                             <Send className="w-3.5 h-3.5 text-emerald-300" />
                           </>
                         )}

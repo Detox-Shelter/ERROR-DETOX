@@ -10,7 +10,11 @@ import {
   Sprout,
   Send,
   RefreshCw,
-  Loader
+  Loader,
+  Timer,
+  Play,
+  Pause,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -31,6 +35,9 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
   const [detoxResult, setDetoxResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Grounding section tabs: 'breath' (default) or 'timer'
+  const [groundTab, setGroundTab] = useState<'breath' | 'timer'>('breath');
+
   // Breathing Trainer state
   const [breathPhase, setBreathPhase] = useState<BreathPhase>('idle');
   const [breathSeconds, setBreathSeconds] = useState(4);
@@ -42,6 +49,56 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
   const noiseNodeRef = useRef<AudioWorkletNode | ScriptProcessorNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const oscillatorNodeRef = useRef<OscillatorNode | null>(null);
+  const birdTimerRef = useRef<any>(null);
+
+  // Meditation timer states
+  const [timerDuration, setTimerDuration] = useState<number>(300); // Default to 5 minutes (300s)
+  const [timerRemaining, setTimerRemaining] = useState<number>(300);
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [timerShowComplete, setTimerShowComplete] = useState<boolean>(false);
+  const timerIntervalRef = useRef<any>(null);
+
+  // Procedural bird sound generator
+  const playBirdChirp = (ctx: AudioContext, destination: AudioNode) => {
+    try {
+      const now = ctx.currentTime;
+      // Sequence of 2 to 4 rapid, high-pitched chirp notes
+      const noteCount = 2 + Math.floor(Math.random() * 3);
+      let startTime = now;
+
+      for (let i = 0; i < noteCount; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+
+        // Organic bird whistle frequency range (approx. 2.8kHz to 5.2kHz)
+        const baseFreq = 2800 + Math.random() * 600;
+        const targetFreq = baseFreq + 1200 + Math.random() * 800;
+        const duration = 0.07 + Math.random() * 0.05; // 70ms - 120ms
+
+        osc.frequency.setValueAtTime(baseFreq, startTime);
+        // Realistic bird chirp frequency sweep (fast pitch sweep up)
+        osc.frequency.exponentialRampToValueAtTime(targetFreq, startTime + duration);
+
+        // Amplitude envelope: Quick attack, fast exponential decay
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(0.015, startTime + duration * 0.15); // Clear, gentle volume
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+
+        // Gap between individual chirps inside the group (40ms - 90ms)
+        startTime += duration + 0.04 + Math.random() * 0.05;
+      }
+    } catch (e) {
+      console.error("Failed to play bird chirp:", e);
+    }
+  };
 
   // Deep breathing timer loop
   useEffect(() => {
@@ -80,7 +137,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
     setBreathPhase('idle');
   };
 
-  // Web Audio Synthesizer: Soothing Wind & Ocean Rustle
+  // Web Audio Synthesizer: Soothing Wind & Ocean Rustle + Procedural Birds
   const toggleAmbientSound = () => {
     if (isAmbientPlaying) {
       // Stop audio
@@ -89,6 +146,10 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
       }
       if (noiseNodeRef.current) {
         noiseNodeRef.current.disconnect();
+      }
+      if (birdTimerRef.current) {
+        clearInterval(birdTimerRef.current);
+        birdTimerRef.current = null;
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -154,6 +215,26 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
         (oscillatorNodeRef as any).current = lfo as any;
         gainNodeRef.current = mainGain;
 
+        // Start Procedural Bird Chirping Loop
+        // Trigger first bird chirp sequence after 1.2 seconds
+        setTimeout(() => {
+          if (audioContextRef.current && audioContextRef.current.state === 'running') {
+            playBirdChirp(ctx, ctx.destination);
+          }
+        }, 1200);
+
+        // Trigger random chirps every 6 seconds on average
+        birdTimerRef.current = setInterval(() => {
+          if (audioContextRef.current && audioContextRef.current.state === 'running') {
+            const extraDelay = Math.random() * 2500; // Random offset to avoid robotic rhythm
+            setTimeout(() => {
+              if (audioContextRef.current && audioContextRef.current.state === 'running') {
+                playBirdChirp(ctx, ctx.destination);
+              }
+            }, extraDelay);
+          }
+        }, 6000);
+
         setIsAmbientPlaying(true);
       } catch (err) {
         console.error("Failed to initialize Web Audio Synthesizer:", err);
@@ -167,8 +248,113 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
+      if (birdTimerRef.current) {
+        clearInterval(birdTimerRef.current);
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
     };
   }, []);
+
+  // Completion sound chime using procedural Web Audio
+  const playCompletionChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      // Use existing audio context if running, or spin up a quick transient one
+      const ctx = audioContextRef.current || new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, now); // C5 (맑고 청아한 도)
+      osc1.frequency.exponentialRampToValueAtTime(1046.50, now + 1.8); // 맑고 시원한 옥타브 위로 상승
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(659.25, now); // E5 (싱그러운 미)
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.15); // 부드럽고 잔잔한 종소리
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc1.stop(now + 1.8);
+      osc2.start(now);
+      osc2.stop(now + 1.8);
+    } catch (e) {
+      console.error("Failed to play completion chime:", e);
+    }
+  };
+
+  // Manage timer countdown
+  useEffect(() => {
+    if (isTimerRunning) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimerRemaining((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            setTimerShowComplete(true);
+            playCompletionChime();
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [isTimerRunning]);
+
+  const selectTimerDuration = (minutes: number) => {
+    const seconds = minutes * 60;
+    setTimerDuration(seconds);
+    setTimerRemaining(seconds);
+    setIsTimerRunning(false);
+    setTimerShowComplete(false);
+  };
+
+  const toggleTimer = () => {
+    if (!isTimerRunning) {
+      // Auto-start ambient sound to aid meditation
+      if (!isAmbientPlaying) {
+        toggleAmbientSound();
+      }
+      setTimerShowComplete(false);
+    }
+    setIsTimerRunning(!isTimerRunning);
+  };
+
+  const resetTimer = () => {
+    setIsTimerRunning(false);
+    setTimerRemaining(timerDuration);
+    setTimerShowComplete(false);
+  };
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleDetoxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,14 +428,8 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
           className="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>워크시트 대시보드로 돌아가기</span>
+          <span>원래 대시보드로 돌아가기</span>
         </button>
-
-        <div className="inline-flex items-center space-x-2">
-          <span className="text-4xs font-bold font-mono px-2 py-1 bg-emerald-100 text-emerald-950 rounded-full">
-            DETOX GARDEN
-          </span>
-        </div>
       </div>
 
       {/* Main Grid: Input and Breathing */}
@@ -266,13 +446,13 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
             <div className="space-y-1 relative z-10">
               <div className="inline-flex items-center space-x-1.5 text-emerald-800">
                 <Sprout className="w-4 h-4 text-emerald-600" />
-                <span className="text-3xs font-bold font-mono tracking-wider">OFFLINE & ONLINE MINDFUL DEBUGGING</span>
+                <span className="text-3xs font-bold font-mono tracking-wider">마음을 돌보는 에러 처방전</span>
               </div>
               <h2 className="text-xl font-bold text-emerald-950 font-display">
-                초록빛 에러 디톡스 가든 쉼터
+                초록빛 에러 해소 가든 쉼터
               </h2>
               <p className="text-3xs text-emerald-700/80 leading-relaxed font-medium">
-                지긋지긋한 서버 컴파일 에러, 메모리 릭, 혹은 답답한 만성 장애 로그를 아래에 적어주세요. 
+                지긋지긋한 에러 메시지나 나를 괴롭히는 무거운 버그를 아래에 적어주세요. 
                 싱그러운 바람 소리와 함께 마음을 환기하고 자연의 비유와 디버깅 지혜를 담은 따뜻한 처방전을 전해드립니다.
               </p>
             </div>
@@ -281,7 +461,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
               {/* Error Log textarea */}
               <div className="space-y-1.5">
                 <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                  나를 괴롭히는 에러 로그 / 컴파일 메시지
+                  나를 힘들게 한 에러 메시지나 코드 (에러 코드)
                 </label>
                 <textarea
                   value={errorLog}
@@ -294,13 +474,13 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
               {/* Frustration / Complaint textarea */}
               <div className="space-y-1.5">
                 <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                  지금 마주하신 지치고 답답한 심정 한마디
+                  지금 내 솔직한 기분이나 힘든 점 (마음 일기)
                 </label>
                 <input
                   type="text"
                   value={frustration}
                   onChange={(e) => setFrustration(e.target.value)}
-                  placeholder="예: 오늘 배포해야 하는데 3시간째 머리가 아프고 힘듭니다."
+                  placeholder="예: 오늘 안에 끝내고 싶은데 3시간째 이 에러로 퇴근이 늦어져 머리가 답답합니다."
                   className="w-full px-3.5 py-3 text-xs bg-white/70 border border-emerald-100 rounded-xl focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300 transition-all placeholder:text-emerald-900/30 font-medium"
                 />
               </div>
@@ -319,12 +499,12 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
                   {isAmbientPlaying ? (
                     <>
                       <Volume2 className="w-3.5 h-3.5 animate-bounce" />
-                      <span>자연의 소리 끄기 (Ambient ON)</span>
+                      <span>자연의 소리 끄기</span>
                     </>
                   ) : (
                     <>
                       <VolumeX className="w-3.5 h-3.5" />
-                      <span>자연의 소리 켜기 (Ambient OFF)</span>
+                      <span>자연의 소리 켜기</span>
                     </>
                   )}
                 </button>
@@ -337,11 +517,11 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
                   {isGenerating ? (
                     <>
                       <Loader className="w-3.5 h-3.5 animate-spin" />
-                      <span>초록빛 조언 피워내는 중...</span>
+                      <span>마음과 에러 정화하는 중...</span>
                     </>
                   ) : (
                     <>
-                      <span>마음 정화 및 조언 받기</span>
+                      <span>에러 정화하고 처방전 받기</span>
                       <Send className="w-3.5 h-3.5" />
                     </>
                   )}
@@ -351,90 +531,256 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
           </div>
         </div>
 
-        {/* Right Column: Breathing Grounding space */}
+        {/* Right Column: Breathing Grounding space or Meditation Timer */}
         <div className="lg:col-span-5 space-y-6" id="detox-breath-section">
-          <div className="bg-white border border-emerald-100/80 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-between min-h-[380px] relative overflow-hidden">
+          <div className="bg-white border border-emerald-100/80 rounded-3xl p-6 shadow-sm flex flex-col min-h-[420px] relative overflow-hidden">
             
-            <div className="text-center space-y-1 w-full">
-              <span className="text-[10px] font-mono font-bold text-emerald-600 block uppercase tracking-wider">
-                Breathing & Grounding
-              </span>
-              <h3 className="text-xs font-bold text-emerald-950">마음 가라앉히기 호흡기</h3>
-              <p className="text-3xs text-gray-400 max-w-xs mx-auto">
-                잠시 화면에서 시선을 돌려, 원의 수축과 팽창 리듬에 맞춰 4초간 함께 호흡해 보세요. 심박수가 차분해질 것입니다.
-              </p>
-            </div>
+            {/* Soft background glow decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/40 rounded-full blur-2xl pointer-events-none" />
 
-            {/* Breathing circles */}
-            <div className="relative flex items-center justify-center my-6 h-40 w-40" id="breathing-circle-container">
-              {/* Outer pulsing ring */}
-              <AnimatePresence>
-                {breathPhase !== 'idle' && (
-                  <motion.div
-                    animate={{
-                      scale: breathPhase === 'inhale' ? [1, 1.45] : breathPhase === 'hold' ? 1.45 : [1.45, 1],
-                      opacity: breathPhase === 'inhale' ? [0.15, 0.4] : breathPhase === 'hold' ? 0.4 : [0.4, 0.15]
-                    }}
-                    transition={{
-                      duration: 4,
-                      ease: "easeInOut",
-                      repeat: breathPhase === 'hold' ? Infinity : 0,
-                    }}
-                    className="absolute inset-0 rounded-full bg-emerald-200"
-                  />
-                )}
-              </AnimatePresence>
-
-              {/* Core interactive circle */}
-              <motion.div
-                animate={{
-                  scale: breathPhase === 'inhale' ? 1.35 : breathPhase === 'hold' ? 1.35 : breathPhase === 'exhale' ? 1 : 1
-                }}
-                transition={{ duration: 4, ease: "easeInOut" }}
-                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center text-center shadow-md relative z-10 transition-colors duration-500 ${
-                  breathPhase === 'inhale'
-                    ? 'bg-emerald-600 text-white'
-                    : breathPhase === 'hold'
-                    ? 'bg-teal-600 text-white'
-                    : breathPhase === 'exhale'
-                    ? 'bg-emerald-800 text-white'
-                    : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+            {/* Grounding Tab Buttons */}
+            <div className="flex border-b border-emerald-100/60 pb-3 mb-5 w-full">
+              <button
+                type="button"
+                onClick={() => setGroundTab('breath')}
+                className={`flex-1 text-center pb-2 text-2xs font-extrabold transition-all cursor-pointer border-b-2 ${
+                  groundTab === 'breath'
+                    ? 'border-emerald-600 text-emerald-950'
+                    : 'border-transparent text-emerald-800/40 hover:text-emerald-950/80'
                 }`}
               >
-                {breathPhase === 'idle' ? (
-                  <Heart className="w-6 h-6 text-emerald-600 animate-pulse" />
-                ) : (
-                  <span className="text-sm font-extrabold font-mono">{breathSeconds}</span>
-                )}
-              </motion.div>
+                🌬️ 마음 호흡기
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroundTab('timer')}
+                className={`flex-1 text-center pb-2 text-2xs font-extrabold transition-all cursor-pointer border-b-2 ${
+                  groundTab === 'timer'
+                    ? 'border-emerald-600 text-emerald-950'
+                    : 'border-transparent text-emerald-800/40 hover:text-emerald-950/80'
+                }`}
+              >
+                ⏳ 몰입 명상 타이머
+              </button>
             </div>
 
-            {/* Controller */}
-            <div className="text-center w-full space-y-3">
-              <span className="text-2xs font-bold text-emerald-950 block">
-                {getBreathPhraseLabel()}
-              </span>
-
-              {breathPhase === 'idle' ? (
-                <button
-                  onClick={startBreathing}
-                  className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-3xs font-semibold rounded-xl border border-emerald-200 transition-all cursor-pointer inline-flex items-center space-x-1.5"
-                >
-                  <Wind className="w-3.5 h-3.5" />
-                  <span>호흡 가이드 시작하기</span>
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <span className="text-3xs text-gray-400 font-mono block">완료한 호흡 주기: {breathCount}회</span>
-                  <button
-                    onClick={stopBreathing}
-                    className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-3xs font-semibold rounded-xl border border-red-200 transition-all cursor-pointer"
-                  >
-                    호흡 정지
-                  </button>
+            {groundTab === 'breath' ? (
+              <div className="flex-1 flex flex-col items-center justify-between space-y-4">
+                <div className="text-center space-y-1 w-full">
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 block uppercase tracking-wider">
+                    Breathing & Grounding
+                  </span>
+                  <h3 className="text-xs font-bold text-emerald-950">마음 가라앉히기 호흡기</h3>
+                  <p className="text-3xs text-gray-400 max-w-xs mx-auto">
+                    잠시 화면에서 시선을 돌려, 원의 수축과 팽창 리듬에 맞춰 4초간 함께 호흡해 보세요. 심박수가 차분해질 것입니다.
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {/* Breathing circles */}
+                <div className="relative flex items-center justify-center my-4 h-40 w-40" id="breathing-circle-container">
+                  {/* Outer pulsing ring */}
+                  <AnimatePresence>
+                    {breathPhase !== 'idle' && (
+                      <motion.div
+                        animate={{
+                          scale: breathPhase === 'inhale' ? [1, 1.45] : breathPhase === 'hold' ? 1.45 : [1.45, 1],
+                          opacity: breathPhase === 'inhale' ? [0.15, 0.4] : breathPhase === 'hold' ? 0.4 : [0.4, 0.15]
+                        }}
+                        transition={{
+                          duration: 4,
+                          ease: "easeInOut",
+                          repeat: breathPhase === 'hold' ? Infinity : 0,
+                        }}
+                        className="absolute inset-0 rounded-full bg-emerald-200"
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* Core interactive circle */}
+                  <motion.div
+                    animate={{
+                      scale: breathPhase === 'inhale' ? 1.35 : breathPhase === 'hold' ? 1.35 : breathPhase === 'exhale' ? 1 : 1
+                    }}
+                    transition={{ duration: 4, ease: "easeInOut" }}
+                    className={`w-24 h-24 rounded-full flex flex-col items-center justify-center text-center shadow-md relative z-10 transition-colors duration-500 ${
+                      breathPhase === 'inhale'
+                        ? 'bg-emerald-600 text-white'
+                        : breathPhase === 'hold'
+                        ? 'bg-teal-600 text-white'
+                        : breathPhase === 'exhale'
+                        ? 'bg-emerald-800 text-white'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                    }`}
+                  >
+                    {breathPhase === 'idle' ? (
+                      <Heart className="w-6 h-6 text-emerald-600 animate-pulse" />
+                    ) : (
+                      <span className="text-sm font-extrabold font-mono">{breathSeconds}</span>
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* Controller */}
+                <div className="text-center w-full space-y-3">
+                  <span className="text-2xs font-bold text-emerald-950 block h-4">
+                    {getBreathPhraseLabel()}
+                  </span>
+
+                  {breathPhase === 'idle' ? (
+                    <button
+                      type="button"
+                      onClick={startBreathing}
+                      className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-3xs font-semibold rounded-xl border border-emerald-200 transition-all cursor-pointer inline-flex items-center space-x-1.5 mx-auto"
+                    >
+                      <Wind className="w-3.5 h-3.5" />
+                      <span>호흡 가이드 시작하기</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <span className="text-3xs text-gray-400 font-mono block">완료한 호흡 주기: {breathCount}회</span>
+                      <button
+                        type="button"
+                        onClick={stopBreathing}
+                        className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-3xs font-semibold rounded-xl border border-red-200 transition-all cursor-pointer mx-auto"
+                      >
+                        호흡 정지
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-between space-y-4">
+                <div className="text-center space-y-1 w-full">
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 block uppercase tracking-wider">
+                    Serenity Timer
+                  </span>
+                  <h3 className="text-xs font-bold text-emerald-950">몰입형 명상 타이머</h3>
+                  <p className="text-3xs text-gray-400 max-w-xs mx-auto">
+                    눈을 감고 숲의 소리에 귀를 기울여 보세요. 선택한 명상 시간 동안 머릿속의 복잡한 잔상을 깨끗이 흘려보냅니다.
+                  </p>
+                </div>
+
+                {/* Progress Circle Visualizer */}
+                <div className="relative flex items-center justify-center my-3 h-40 w-40">
+                  {/* Glowing halo */}
+                  {isTimerRunning && (
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.15, 1],
+                        opacity: [0.1, 0.25, 0.1]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className="absolute inset-2 rounded-full bg-emerald-100 blur-md"
+                    />
+                  )}
+
+                  {/* SVG progress circle */}
+                  <svg className="w-36 h-36 transform -rotate-90">
+                    <circle
+                      cx="72"
+                      cy="72"
+                      r="54"
+                      className="stroke-emerald-50/80"
+                      strokeWidth="5"
+                      fill="transparent"
+                    />
+                    <motion.circle
+                      cx="72"
+                      cy="72"
+                      r="54"
+                      className="stroke-emerald-600"
+                      strokeWidth="5"
+                      fill="transparent"
+                      strokeDasharray={339.29} // 2 * Math.PI * 54
+                      animate={{
+                        strokeDashoffset: 339.29 * (1 - (timerRemaining / timerDuration))
+                      }}
+                      transition={{ duration: 1, ease: "linear" }}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+
+                  {/* Timer display */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center space-y-0.5">
+                    <span className="text-lg font-extrabold font-mono text-emerald-950 tracking-tight">
+                      {formatTime(timerRemaining)}
+                    </span>
+                    <span className="text-[8px] text-emerald-600 font-semibold font-mono tracking-wider">
+                      {isTimerRunning ? 'MEDITATING' : 'PAUSED'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Duration select controls or complete state */}
+                <div className="w-full text-center space-y-4">
+                  {timerShowComplete ? (
+                    <motion.div
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl max-w-xs mx-auto"
+                    >
+                      <span className="text-2xs font-extrabold text-emerald-950 block">✨ 명상 완료!</span>
+                      <span className="text-4xs text-emerald-800 leading-relaxed block mt-1">
+                        명상 시간이 온전히 끝났습니다. 머릿속이 더 가볍고 편안해지셨기를 바랍니다.
+                      </span>
+                    </motion.div>
+                  ) : (
+                    /* Preset selectors */
+                    <div className="flex items-center justify-center space-x-1.5">
+                      {[5, 10, 15].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => selectTimerDuration(mins)}
+                          className={`px-3 py-1.5 rounded-lg text-4xs font-bold font-mono transition-all border cursor-pointer ${
+                            timerDuration === mins * 60
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-3xs'
+                              : 'bg-emerald-50/50 text-emerald-900/60 border-emerald-100 hover:bg-emerald-50 hover:text-emerald-950'
+                          }`}
+                        >
+                          {mins}분
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Play/Pause/Reset action control */}
+                  <div className="flex items-center justify-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={toggleTimer}
+                      className="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-white text-3xs font-bold rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center space-x-1.5"
+                    >
+                      {isTimerRunning ? (
+                        <>
+                          <Pause className="w-3 h-3" />
+                          <span>잠시 멈춤</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3 h-3 text-emerald-300 fill-emerald-300" />
+                          <span>명상 시작</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={resetTimer}
+                      title="타이머 초기화"
+                      className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-100 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
