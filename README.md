@@ -11,8 +11,70 @@
 
 *   **보태니컬 미학 (Botanical Aesthetics):** 지친 눈과 지친 마음에 안정을 주는 부드러운 화이트, 딥 차콜 그레이, 그리고 올리브/에메랄드 그린 컬러 팔레트를 바탕으로 고도의 여백의 미를 구현하였습니다.
 *   **공감과 은유 (Empathy & Metaphor):** 단순한 에러 디버깅 봇이 아닙니다. 에러 종류에 맞는 식물의 생태적 습성(유칼립투스의 허브 정화력, 대나무의 유연성, 몬스테라의 넓은 잎, 아이비의 강인한 생명력)을 은유하여 마음을 위로하고 지혜로운 디버깅 경로를 안내합니다.
-*   **인터랙티브 자연 사운드 (Web Audio Synthesis):** Web Audio API를 활용해 인공적인 미디어 파일 로드 없이 즉석에서 생성되는 숲속의 바람, 가랑비, 산뜻한 새소리 사운드를 온·오프 조절하여 완벽한 청각적 디톡스 환경을 조성합니다.
+*   **인터랙티브 자연 사운드 (Web Audio Synthesis):** Web Audio API를 활용해 인공적인 미디어 파일 로드 없이 즉석에서 생성되는 숲속의 바람, 가랑비, 산뜻한 새소리, 모닥불, 풀벌레, 파도 사운드를 온·오프 조절하여 완벽한 청각적 디톡스 환경을 조성합니다.
 *   **유기적인 가이드라인:** 사용자가 길을 잃지 않도록 스무스 스크롤링 및 자동 포커스가 장착된 플로팅 바로가기 버튼(FAB)과 세심한 보태니컬 모달 가이드가 동반됩니다.
+
+---
+
+## 📸 실제 구동 화면 (Application Preview)
+
+아래 화면은 로컬에서 `npm run dev` 로 띄운 뒤 실제 Gemini 응답을 받아 캡처한 것입니다.
+
+### 🪴 1. 메인 쉼터와 숲속 사운드 믹서
+> 붉은 에러 줄과 싸우던 눈을 잠시 쉬게 하는 첫 화면입니다. 바람, 가랑비, 새소리, 모닥불, 풀벌레, 파도 여섯 채널을 조합하는 Web Audio 신디사이저와 5음계 빗방울 연주기가 함께 놓여 있습니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-01-shelter-main.png" alt="에러 정원 메인 쉼터와 숲속 사운드 믹서 화면" width="100%" />
+</p>
+
+### 🌱 2. 에러 묻고 정원 가꾸기
+> 에러 로그와 지금의 솔직한 기분을 적고 함께 키울 식물을 고르는 정화 입력 화면입니다. 오른쪽에는 정화를 기다리는 동안 호흡을 고르는 4-4-4 심호흡 조율기가 있습니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-02-error-compost.png" alt="에러 로그 입력과 식물 선택, 심호흡 조율기 화면" width="100%" />
+</p>
+
+### 💊 3. 마음 처방전
+> `OutOfMemoryError` 를 몬스테라로 정화한 실제 결과입니다. 에러 원인과 내용, 핵심 해결책을 요약 카드로 먼저 보여준 뒤, 식물의 생태에 빗댄 위로와 디버깅 조언이 이어집니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-03-remedy.png" alt="몬스테라 처방전 결과와 성장 상태 화면" width="100%" />
+</p>
+
+### 🌸 4. 정원 광장
+> 다른 개발자가 정화한 에러 일지를 읽고 응원을 건네는 공유 게시판입니다. 식물 종류로 걸러 볼 수 있고, 응원 수는 Firestore에 누적됩니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-04-community-square.png" alt="정원 광장 커뮤니티 게시판 화면" width="100%" />
+</p>
+
+### 📦 5. 내 보관함과 테라리움
+> 정화한 기록이 쌓이면 테라리움 레벨이 오르고 가드너 배지가 해금됩니다. 화면은 에러 3건을 정화해 2단계 푸른 새싹 온실에 도달한 상태입니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-05-archive-terrarium.png" alt="디톡스 처방전 보관함과 테라리움 성장 화면" width="100%" />
+</p>
+
+### 📖 6. 기법서
+> 복잡한 아키텍처 문제를 자연의 섭리에 빗대어 풀어놓은 읽을거리와, TRIZ·SCAMPER·ERRC 가이드북 입구입니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-06-technique-book.png" alt="에러 해결 기법서 화면" width="100%" />
+</p>
+
+### 🌙 7. 밤 정원 테마
+> 늦은 밤 작업용 저조도 테마입니다. 헤더의 밤 정원 스위치로 전환하며, 선택한 테마는 다음 방문까지 유지됩니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-07-night-garden.png" alt="밤 정원 다크 테마 화면" width="100%" />
+</p>
+
+### 📘 8. 사용 설명서
+> 처음 온 사람이 길을 잃지 않도록 5단계 이용 순서를 안내하고, 식물 조언 가이드와 TRIZ·SCAMPER·ERRC 기법을 탭으로 나눠 담았습니다.
+
+<p align="center">
+  <img src="./src/assets/images/preview-08-guide-modal.png" alt="에러 디톡스 정원 사용 설명서 모달" width="100%" />
+</p>
 
 ---
 
