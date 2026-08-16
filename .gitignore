@@ -6,3 +6,22 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# 서버가 런타임에 생성하는 정원 광장 일지 저장소
+community_posts.json
+
+# Vercel CLI가 만드는 프로젝트 연결 정보
+.vercel
+
+# bun.lock이 이 프로젝트의 잠금 파일. npm 잠금 파일이 같이 올라가면
+# Vercel이 패키지 매니저를 npm으로 잘못 감지함
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 빌드 부산물과 편집기, 운영체제 파일
+*.tsbuildinfo
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
