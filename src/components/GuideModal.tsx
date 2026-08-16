@@ -5,10 +5,10 @@ interface GuideModalProps {
   onClose: () => void;
 }
 
-type TabType = 'botany' | 'triz' | 'scamper' | 'errc';
+type TabType = 'newbie' | 'botany' | 'triz' | 'scamper' | 'errc';
 
 export default function GuideModal({ onClose }: GuideModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('botany');
+  const [activeTab, setActiveTab] = useState<TabType>('newbie');
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-gray-950/40 backdrop-blur-xs p-4 animate-fade-in" id="guide-modal-overlay">
@@ -17,7 +17,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between" id="guide-modal-header">
           <div className="flex items-center space-x-2.5 text-gray-900">
             <BookOpen className="w-5 h-5 text-emerald-800" />
-            <h3 className="text-sm font-bold text-gray-950">식물 조언 & SW 설계 기법 가이드북</h3>
+            <h3 className="text-sm font-bold text-gray-950">에러 디톡스 정원 사용 설명서</h3>
           </div>
           <button
             onClick={onClose}
@@ -30,6 +30,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
         {/* Tab switcher */}
         <div className="px-5 py-2 border-b border-gray-50 bg-gray-50/50 flex space-x-1 overflow-x-auto" id="guide-tabs">
           {([
+            { id: 'newbie', label: '🌱 초보 가이드 (정원 입문)' },
             { id: 'botany', label: '🌿 식물 조언 가이드' },
             { id: 'triz', label: '💡 TRIZ 모순' },
             { id: 'scamper', label: '🎯 SCAMPER' },
@@ -52,6 +53,93 @@ export default function GuideModal({ onClose }: GuideModalProps) {
         {/* Tab content */}
         <div className="p-6 overflow-y-auto flex-1 text-xs text-gray-600 leading-relaxed space-y-6 animate-fade-in" id="guide-tab-content">
           
+          {activeTab === 'newbie' && (
+            <div className="space-y-5">
+              <div className="space-y-1.5 border-b border-emerald-50 pb-3">
+                <h4 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                  <Leaf className="w-4 h-4 text-emerald-600" />
+                  반갑습니다! 에러 정원 100% 활용법
+                </h4>
+                <p className="text-3xs text-emerald-800/80">
+                  에러 정원은 밤새 모니터 앞에서 고군분투하며 쌓인 답답함을 털어내고, 자연의 위로와 함께 문제 해결의 아이디어를 얻어가는 마음 쉼터입니다. 아래 안내를 따라 편안하게 이용해 보세요.
+                </p>
+              </div>
+
+              <div className="space-y-3.5">
+                {/* Step 1 */}
+                <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                    01
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-bold text-emerald-950 text-2xs block">나를 밤새우게 한 에러 기록하기</span>
+                    <p className="text-3xs text-gray-500 leading-relaxed">
+                      정원의 <strong className="text-emerald-900">"에러 털어내기"</strong> 탭에서 나를 고통받게 했던 에러 로그와 답답한 마음을 편하게 남겨보세요.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                    02
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-bold text-emerald-950 text-2xs block">식물 선택 및 따뜻한 마음 처방전 받기</span>
+                    <p className="text-3xs text-gray-500 leading-relaxed">
+                      원하는 식물을 심으면, 문제 해결에 도움이 되는 <strong className="text-emerald-900">소프트웨어 처방전(TRIZ, SCAMPER, ERRC 기반)</strong>과 따뜻한 위로의 문장이 생성됩니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                    03
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-bold text-emerald-950 text-2xs block">자연의 소리와 함께 마음 가라앉히기</span>
+                    <p className="text-3xs text-gray-500 leading-relaxed">
+                      메인 화면 하단의 <strong className="text-emerald-900">"자연의 소리 믹서"</strong>에서 소나기, 밤벌레, 빗소리, 모닥불 소리를 조합해 지친 머리를 맑게 식혀보세요.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                    04
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-bold text-emerald-950 text-2xs block">커뮤니티 광장에서 다른 개발자들과 응원 나누기</span>
+                    <p className="text-3xs text-gray-500 leading-relaxed">
+                      <strong className="text-emerald-900">"에러 나눔 광장"</strong> 탭에서 홀로 밤새우는 다른 동료 개발자들의 에러 해결 일지를 읽어보고, 따뜻한 응원의 물줄기를 건네보세요.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                    05
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-bold text-emerald-950 text-2xs block">나의 처방전 보관함에 간직하기</span>
+                    <p className="text-3xs text-gray-500 leading-relaxed">
+                      에러를 극복하며 모은 나만의 처방전과 식물들은 <strong className="text-emerald-900">"보관함"</strong>에 안전하게 기록되어 언제든 꺼내볼 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Day/Night tip */}
+              <div className="p-3.5 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-3xs text-amber-900/95 flex items-center space-x-2.5">
+                <span className="text-xs">💡</span>
+                <span>늦은 밤에는 우측 상단의 <strong className="text-amber-800">"밤 정원 / 낮 정원"</strong> 스위치를 켜서 눈이 편안한 모드로 정원을 가꿔보세요!</span>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'botany' && (
             <div className="space-y-5">
               <div className="space-y-1.5 border-b border-emerald-50 pb-3">

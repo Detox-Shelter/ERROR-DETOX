@@ -36,6 +36,158 @@
   font-size: 0.55rem;
 }
 
+/* ==========================================================================
+   Night Garden (Nocturnal dark mode) Style Overrides
+   ========================================================================== */
+.theme-night {
+  background-color: #050E0C !important;
+  color: #E2FAF1 !important;
+}
+
+/* Global Container backgrounds and borders */
+.theme-night,
+.theme-night #app-root,
+.theme-night .min-h-screen {
+  background-color: #050E0C !important;
+  color: #E2FAF1 !important;
+}
+
+/* Header style override */
+.theme-night header,
+.theme-night #header-container {
+  background-color: rgba(9, 21, 18, 0.85) !important;
+  border-color: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Cards, boxes and modules */
+:is(.theme-night, .dark) .bg-white,
+:is(.theme-night, .dark) [class*="bg-white"],
+:is(.theme-night, .dark) [class*="bg-[#FAF9F5]"],
+:is(.theme-night, .dark) [class*="bg-[#FCFBF7]"],
+:is(.theme-night, .dark) [class*="bg-[#FCFBF8]"],
+:is(.theme-night, .dark) [class*="bg-[#FAF6EE]"],
+:is(.theme-night, .dark) [class*="bg-[#FCFBF6]"],
+:is(.theme-night, .dark) [class*="bg-[#FAF5ED]"],
+:is(.theme-night, .dark) [class*="bg-[#FAF9F6]"],
+:is(.theme-night, .dark) [class*="bg-emerald-50"],
+:is(.theme-night, .dark) [class*="bg-amber-50"],
+:is(.theme-night, .dark) [class*="bg-sky-50"],
+:is(.theme-night, .dark) [class*="bg-rose-50"],
+:is(.theme-night, .dark) [class*="bg-gray-50"],
+:is(.theme-night, .dark) .bg-\[\#FAF9F5\],
+:is(.theme-night, .dark) .bg-\[\#FCFBF7\],
+:is(.theme-night, .dark) .bg-\[\#FCFBF8\],
+:is(.theme-night, .dark) .bg-emerald-50\/20,
+:is(.theme-night, .dark) .bg-emerald-50\/50 {
+  background-color: #0A1613 !important;
+  border-color: rgba(16, 185, 129, 0.18) !important;
+  color: #E2FAF1 !important;
+}
+
+/* Text coloring overrides for optimal contrast */
+.theme-night .text-emerald-950,
+.theme-night .text-slate-900,
+.theme-night .text-neutral-900,
+.theme-night .text-gray-900 {
+  color: #F0FDF8 !important;
+}
+
+.theme-night .text-emerald-900,
+.theme-night .text-slate-800,
+.theme-night .text-neutral-800,
+.theme-night .text-gray-800 {
+  color: #D3FAF0 !important;
+}
+
+.theme-night .text-emerald-800,
+.theme-night .text-slate-700,
+.theme-night .text-neutral-700,
+.theme-night .text-gray-700 {
+  color: #A1ECD7 !important;
+}
+
+.theme-night .text-emerald-700,
+.theme-night .text-emerald-600 {
+  color: #34D399 !important;
+}
+
+.theme-night .text-gray-500,
+.theme-night .text-neutral-500,
+.theme-night .text-emerald-800\/60,
+.theme-night .text-emerald-700\/80 {
+  color: #8CE2C9 !important;
+  opacity: 0.8;
+}
+
+/* Inputs, textareas, selectors */
+.theme-night input,
+.theme-night select,
+.theme-night textarea {
+  background-color: #0E1F1A !important;
+  color: #F0FDF8 !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+.theme-night input:focus,
+.theme-night select:focus,
+.theme-night textarea:focus {
+  border-color: #10B981 !important;
+}
+
+/* Buttons and dynamic accents */
+.theme-night .bg-emerald-900 {
+  background-color: #0F9F72 !important;
+  color: #041B15 !important;
+}
+
+.theme-night .bg-emerald-900 * {
+  color: #041B15 !important;
+}
+
+.theme-night .hover\:bg-emerald-950:hover,
+.theme-night .bg-emerald-950 {
+  background-color: #10B981 !important;
+  color: #041B15 !important;
+}
+
+/* Community square styling adjustments */
+.theme-night .bg-\[\#FAF6EE\],
+.theme-night .bg-[#FAF6EE] {
+  background-color: #07120E !important;
+  border-color: #0D221C !important;
+}
+
+.theme-night .border-8 {
+  border-color: #0A1C16 !important;
+}
+
+/* Sub-panels and modals */
+.theme-night .border-emerald-100,
+.theme-night .border-emerald-100\/40,
+.theme-night .border-emerald-100\/50,
+.theme-night .border-emerald-200,
+.theme-night .border-emerald-200\/60,
+.theme-night .border-emerald-200\/80,
+.theme-night .border-emerald-150,
+.theme-night .border-gray-100 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.theme-night .bg-emerald-50,
+.theme-night .bg-emerald-50\/50,
+.theme-night .bg-emerald-500\/10,
+.theme-night .bg-gray-50,
+.theme-night .bg-gray-50\/50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.theme-night .shadow-sm,
+.theme-night .shadow-3xs,
+.theme-night .shadow-2xs {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45) !important;
+}
+
 /* Print optimizations */
 @media print {
   body {

@@ -24,10 +24,14 @@ import {
   Sun,
   Flame,
   ChevronRight,
-  Archive
+  Archive,
+  Waves
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import GuideModal from './GuideModal';
+import CommunitySquare from './CommunitySquare';
 
 // Import our beautiful generated botanical images
 import leafDecor from '../assets/images/botanical_leaf_decor_1784084589115.jpg';
@@ -38,18 +42,19 @@ interface DetoxLandingPageProps {
   user: FirebaseUser | null;
   onLogin: () => void;
   onLogout: () => void;
+  customDisplayName?: string;
+  customGardenerTitle?: string;
+  customPhotoURL?: string;
 }
 
 // Sound channels available in our Forest Ambient Mixer
 interface SoundChannel {
   id: string;
   label: string;
+  desc?: string;
   icon: React.ReactNode;
   active: boolean;
   gain: number;
-  node: AudioNode | null;
-  gainNode: GainNode | null;
-  oscNode?: OscillatorNode | null;
 }
 
 // Locally persisted garden log
@@ -81,9 +86,78 @@ const ZEN_QUOTES = [
   { quote: "새벽녘 정원사들이 이슬 맺힌 길을 조용히 거닐듯, 밤새 쌓인 에러를 향해 고요하게 숨 한 모금 내쉬며 다가가 보세요.", author: "초록빛 안식처 수칙" }
 ];
 
-export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandingPageProps) {
+export default function DetoxLandingPage({ user, onLogin, onLogout, customDisplayName, customGardenerTitle, customPhotoURL }: DetoxLandingPageProps) {
   // Navigation states
-  const [activeTab, setActiveTab] = useState<'garden' | 'archive' | 'wisdom'>('garden');
+  const [activeTab, setActiveTab] = useState<'garden' | 'community' | 'archive' | 'wisdom'>('garden');
+
+  const [isSharingToCommunity, setIsSharingToCommunity] = useState(false);
+  const [isSharedToCommunity, setIsSharedToCommunity] = useState(false);
+
+  const handleShareToCommunity = async () => {
+    if (isSharedToCommunity || isSharingToCommunity) return;
+    setIsSharingToCommunity(true);
+    try {
+      let plantType = selectedSeed;
+      if (plantType === 'recommend') {
+        if (botanicalTitle.includes('유칼립투스')) plantType = 'eucalyptus';
+        else if (botanicalTitle.includes('대나무')) plantType = 'bamboo';
+        else if (botanicalTitle.includes('몬스테라')) plantType = 'monstera';
+        else if (botanicalTitle.includes('아이비')) plantType = 'ivy';
+        else plantType = 'recommend';
+      }
+
+      const errorTypeMap: Record<string, 'delay' | 'network' | 'memory' | 'legacy' | 'other'> = {
+        eucalyptus: 'delay',
+        bamboo: 'network',
+        monstera: 'memory',
+        ivy: 'legacy',
+        recommend: 'other'
+      };
+
+      const payload = {
+        nickname: customDisplayName || user?.displayName || '익명의가드너',
+        gardenerTitle: customGardenerTitle || '초보 가드너 🌱',
+        photoURL: customPhotoURL || user?.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        errorLog: errorLog || '',
+        frustration: frustration || '따뜻하게 싹튼 에러 정화 기록',
+        errorType: errorTypeMap[plantType] || 'other',
+        plantType: plantType,
+        remedy: prescription || '',
+        timestamp: new Date().toISOString(),
+        cheers: 0
+      };
+
+      // 1. Try to add directly to Firestore
+      try {
+        console.log("Writing new post to Cloud Firestore...");
+        const postsCol = collection(db, 'community_posts');
+        await addDoc(postsCol, payload);
+        setIsSharedToCommunity(true);
+        console.log("Successfully wrote post to Firestore!");
+        return;
+      } catch (firestoreError) {
+        console.warn("Firestore write error, falling back to backend API storage:", firestoreError);
+      }
+
+      // 2. Fallback to server API
+      const res = await fetch('/api/community', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setIsSharedToCommunity(true);
+      } else {
+        throw new Error('정원 광장 서버로 전송에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('정원 광장에 일지를 전송하는 중 문제가 발생했습니다.');
+    } finally {
+      setIsSharingToCommunity(false);
+    }
+  };
 
   // Grounding Breath States
   const [breathPhase, setBreathPhase] = useState<'idle' | 'inhale' | 'hold' | 'exhale'>('idle');
@@ -149,14 +223,232 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
     setQuoteIndex(Math.floor(Math.random() * ZEN_QUOTES.length));
   }, []);
 
-  // Sound Synth States
+  // Sound Synth States & Audio Track Reference Map
   const [isAudioContextInited, setIsAudioContextInited] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  
+  // Dedicated Ref tracking real Web Audio instances independently from React re-renders
+  const activeAudioChannelsRef = useRef<{
+    [key: string]: {
+      mainGain: GainNode;
+      nodes: (AudioNode | { stop?: () => void; disconnect: () => void })[];
+      timers: number[];
+      active: boolean;
+    };
+  }>({});
+
   const [soundChannels, setSoundChannels] = useState<SoundChannel[]>([
-    { id: 'wind', label: '숲속의 바람 (Breeze)', icon: <Wind className="w-3.5 h-3.5" />, active: false, gain: 0.15, node: null, gainNode: null },
-    { id: 'rain', label: '차분한 가랑비 (Rain)', icon: <Droplet className="w-3.5 h-3.5" />, active: false, gain: 0.12, node: null, gainNode: null },
-    { id: 'birds', label: '산뜻한 새소리 (Birds)', icon: <Sprout className="w-3.5 h-3.5" />, active: false, gain: 0.08, node: null, gainNode: null }
+    { id: 'wind', label: '숲속의 바람 (Breeze)', desc: '지친 머리를 맑게 식혀주는 부드러운 바람', icon: <Wind className="w-3.5 h-3.5" />, active: false, gain: 0.16 },
+    { id: 'rain', label: '차분한 가랑비 (Rain)', desc: '창가에 떨어지는 고요한 빗방울 소리', icon: <Droplet className="w-3.5 h-3.5" />, active: false, gain: 0.14 },
+    { id: 'birds', label: '산뜻한 새소리 (Birds)', desc: '숲속 나뭇가지에서 지저귀는 맑은 새소리', icon: <Sprout className="w-3.5 h-3.5" />, active: false, gain: 0.09 },
+    { id: 'campfire', label: '타닥타닥 모닥불 (Fire)', desc: '포근하게 타오르는 따뜻한 모닥불 소리', icon: <Flame className="w-3.5 h-3.5" />, active: false, gain: 0.15 },
+    { id: 'crickets', label: '밤의 풀벌레 (Crickets)', desc: '여름밤 테라스의 서정적인 풀벌레 소리', icon: <Sparkles className="w-3.5 h-3.5" />, active: false, gain: 0.08 },
+    { id: 'ocean', label: '고요한 파도 (Waves)', desc: '모래사장을 부드럽게 밀려오는 밤바다 파도', icon: <Waves className="w-3.5 h-3.5" />, active: false, gain: 0.15 }
   ]);
+
+  // Active meditation background sound states & references (specifically for the ground/breath meditation session)
+  const [activeMeditationSound, setActiveMeditationSound] = useState<'rain' | 'forest' | 'ocean' | null>('rain');
+  const [isMeditationSoundPlaying, setIsMeditationSoundPlaying] = useState(false);
+  const meditationGainNodeRef = useRef<GainNode | null>(null);
+  const meditationSourcesRef = useRef<AudioNode[]>([]);
+  const meditationLfoRef = useRef<OscillatorNode | null>(null);
+  const meditationBirdTimeoutRef = useRef<number | null>(null);
+
+  const startMeditationSound = async (soundType: 'rain' | 'forest' | 'ocean') => {
+    stopMeditationSound();
+    initAudioContext();
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    const mainGain = ctx.createGain();
+    mainGain.gain.setValueAtTime(0.12, ctx.currentTime);
+    mainGain.connect(ctx.destination);
+    meditationGainNodeRef.current = mainGain;
+
+    if (soundType === 'rain') {
+      // 1. Soft procedural rain
+      const bufferSize = ctx.sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        const dust = Math.random() > 0.985 ? 0.35 * white : 0.008 * white;
+        data[i] = dust;
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 1600;
+      bandpass.Q.value = 1.2;
+
+      source.connect(bandpass);
+      bandpass.connect(mainGain);
+      source.start(0);
+
+      meditationSourcesRef.current = [source];
+    } else if (soundType === 'forest') {
+      // 2. Forest Breeze + chirping birds
+      const bufferSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = 0.1 * white + 0.85 * lastOut;
+        lastOut = data[i];
+      }
+      const breezeSource = ctx.createBufferSource();
+      breezeSource.buffer = buffer;
+      breezeSource.loop = true;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 320;
+      filter.Q.value = 0.8;
+
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.09;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 120;
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+
+      breezeSource.connect(filter);
+      filter.connect(mainGain);
+
+      breezeSource.start(0);
+      lfo.start(0);
+
+      meditationSourcesRef.current = [breezeSource];
+      meditationLfoRef.current = lfo;
+
+      const birdGain = ctx.createGain();
+      birdGain.gain.value = 0.05;
+      birdGain.connect(mainGain);
+
+      const triggerForestBird = () => {
+        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const sweepGain = ctx.createGain();
+
+        osc.type = 'sine';
+        const baseFreq = 2200 + Math.random() * 1200;
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.14);
+
+        sweepGain.gain.setValueAtTime(0, now);
+        sweepGain.gain.linearRampToValueAtTime(0.03, now + 0.02);
+        sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        osc.connect(sweepGain);
+        sweepGain.connect(birdGain);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+      };
+
+      const runBirds = () => {
+        triggerForestBird();
+        meditationBirdTimeoutRef.current = window.setTimeout(runBirds, 2500 + Math.random() * 4500);
+      };
+      runBirds();
+    } else if (soundType === 'ocean') {
+      // 3. Immersive ocean waves (modulating noise lowpass and amplitude over 14s cycles)
+      const bufferSize = ctx.sampleRate * 2.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = 0.14 * white + 0.82 * lastOut;
+        lastOut = data[i];
+      }
+      const oceanSource = ctx.createBufferSource();
+      oceanSource.buffer = buffer;
+      oceanSource.loop = true;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 300;
+
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.07; // 14 seconds tide
+
+      const filterLfoGain = ctx.createGain();
+      filterLfoGain.gain.value = 220;
+
+      lfo.connect(filterLfoGain);
+      filterLfoGain.connect(filter.frequency);
+
+      const ampLfoGain = ctx.createGain();
+      ampLfoGain.gain.value = 0.07;
+
+      lfo.connect(ampLfoGain);
+      ampLfoGain.connect(mainGain.gain);
+
+      oceanSource.connect(filter);
+      filter.connect(mainGain);
+
+      oceanSource.start(0);
+      lfo.start(0);
+
+      meditationSourcesRef.current = [oceanSource];
+      meditationLfoRef.current = lfo;
+    }
+
+    setIsMeditationSoundPlaying(true);
+  };
+
+  const stopMeditationSound = () => {
+    if (meditationBirdTimeoutRef.current) {
+      clearTimeout(meditationBirdTimeoutRef.current);
+      meditationBirdTimeoutRef.current = null;
+    }
+    if (meditationLfoRef.current) {
+      try {
+        meditationLfoRef.current.stop();
+      } catch (e) {}
+      meditationLfoRef.current.disconnect();
+      meditationLfoRef.current = null;
+    }
+    meditationSourcesRef.current.forEach((src) => {
+      try {
+        (src as any).stop();
+      } catch (e) {}
+      src.disconnect();
+    });
+    meditationSourcesRef.current = [];
+    if (meditationGainNodeRef.current) {
+      meditationGainNodeRef.current.disconnect();
+      meditationGainNodeRef.current = null;
+    }
+    setIsMeditationSoundPlaying(false);
+  };
+
+  // Auto trigger background sounds when breathing meditation is running
+  useEffect(() => {
+    if (breathPhase === 'idle') {
+      stopMeditationSound();
+    } else if (activeMeditationSound) {
+      startMeditationSound(activeMeditationSound);
+    }
+  }, [breathPhase, activeMeditationSound]);
+
+  // Clean up meditation sounds on unmount
+  useEffect(() => {
+    return () => {
+      stopMeditationSound();
+    };
+  }, []);
 
   // Saved reflections logs (terrarium logs)
   const [savedLogs, setSavedLogs] = useState<GardenLog[]>([]);
@@ -284,191 +576,413 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
     return () => clearInterval(interval);
   }, [breathPhase]);
 
-  // Audio Context Initialization
-  const initAudioContext = () => {
-    if (audioCtxRef.current) return;
+  // Audio Context Initialization & Guaranteed Resume Helper
+  const getOrCreateAudioContext = async (): Promise<AudioContext | null> => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new AudioCtx();
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtxRef.current = new AudioCtx();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        await audioCtxRef.current.resume();
+      }
       setIsAudioContextInited(true);
+      return audioCtxRef.current;
     } catch (err) {
-      console.error("Failed to init AudioContext:", err);
+      console.error("Failed to init/resume AudioContext:", err);
+      return null;
+    }
+  };
+
+  const initAudioContext = () => {
+    getOrCreateAudioContext();
+  };
+
+  // Stop a specific audio channel safely and cleanly
+  const stopChannelAudio = (id: string) => {
+    const track = activeAudioChannelsRef.current[id];
+    if (!track) return;
+
+    // 1. Immediately flag as inactive so loops or pending callbacks stop
+    track.active = false;
+
+    // 2. Clear all registered timers
+    track.timers.forEach((t) => clearTimeout(t));
+    track.timers = [];
+
+    // 3. Stop and disconnect all active nodes
+    track.nodes.forEach((node) => {
+      try {
+        if ('stop' in node && typeof (node as any).stop === 'function') {
+          (node as any).stop();
+        }
+      } catch (e) {}
+      try {
+        node.disconnect();
+      } catch (e) {}
+    });
+    track.nodes = [];
+
+    // 4. Disconnect main gain node
+    try {
+      track.mainGain.disconnect();
+    } catch (e) {}
+
+    delete activeAudioChannelsRef.current[id];
+  };
+
+  // Start audio synthesis for a channel
+  const startChannelAudio = async (id: string, gainVal: number) => {
+    const ctx = await getOrCreateAudioContext();
+    if (!ctx) return;
+
+    // Clean up existing track if any
+    stopChannelAudio(id);
+
+    const mainGain = ctx.createGain();
+    mainGain.gain.setValueAtTime(gainVal, ctx.currentTime);
+    mainGain.connect(ctx.destination);
+
+    const track = {
+      mainGain,
+      nodes: [] as (AudioNode | { stop?: () => void; disconnect: () => void })[],
+      timers: [] as number[],
+      active: true
+    };
+    activeAudioChannelsRef.current[id] = track;
+
+    try {
+      if (id === 'wind') {
+        // 1. Forest Breeze (Pink-ish filtered noise + Slow gentle LFO wind gusts)
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          data[i] = 0.12 * white + 0.85 * lastOut;
+          lastOut = data[i];
+        }
+
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = buffer;
+        noiseSource.loop = true;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 350;
+        filter.Q.value = 0.9;
+
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 0.12; // breathing rate
+
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 180;
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        noiseSource.connect(filter);
+        filter.connect(mainGain);
+
+        noiseSource.start(0);
+        lfo.start(0);
+
+        track.nodes.push(noiseSource, filter, lfo, lfoGain);
+      } else if (id === 'rain') {
+        // 2. Soft Rain (Crackle noise with bandpass + highpass filtering)
+        const bufferSize = ctx.sampleRate * 1.5;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          const dust = Math.random() > 0.983 ? 0.35 * white : 0.008 * white;
+          data[i] = dust;
+        }
+
+        const rainSource = ctx.createBufferSource();
+        rainSource.buffer = buffer;
+        rainSource.loop = true;
+
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 1700;
+        bandpass.Q.value = 1.2;
+
+        const highpass = ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.value = 300;
+
+        rainSource.connect(bandpass);
+        bandpass.connect(highpass);
+        highpass.connect(mainGain);
+
+        rainSource.start(0);
+        track.nodes.push(rainSource, bandpass, highpass);
+      } else if (id === 'birds') {
+        // 3. Singing Birds (Self-contained procedural scheduler with guaranteed stop)
+        const birdMasterGain = ctx.createGain();
+        birdMasterGain.gain.value = 1.0;
+        birdMasterGain.connect(mainGain);
+        track.nodes.push(birdMasterGain);
+
+        const triggerBird = () => {
+          if (!track.active || !audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const sweepGain = ctx.createGain();
+
+          osc.type = 'sine';
+          const baseFreq = 2300 + Math.random() * 1300;
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.55, now + 0.12);
+
+          sweepGain.gain.setValueAtTime(0, now);
+          sweepGain.gain.linearRampToValueAtTime(0.06, now + 0.02);
+          sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+          osc.connect(sweepGain);
+          sweepGain.connect(birdMasterGain);
+
+          osc.start(now);
+          osc.stop(now + 0.16);
+
+          const cleanupTimer = window.setTimeout(() => {
+            try { osc.disconnect(); sweepGain.disconnect(); } catch (e) {}
+          }, 200);
+          track.timers.push(cleanupTimer);
+        };
+
+        const scheduleBirds = () => {
+          if (!track.active) return;
+          triggerBird();
+          if (Math.random() > 0.45) {
+            const secondaryTimer = window.setTimeout(() => {
+              if (track.active) triggerBird();
+            }, 180);
+            track.timers.push(secondaryTimer);
+          }
+          const nextInterval = 2200 + Math.random() * 3800;
+          const mainTimer = window.setTimeout(scheduleBirds, nextInterval);
+          track.timers.push(mainTimer);
+        };
+
+        scheduleBirds();
+      } else if (id === 'campfire') {
+        // 4. Warm Campfire (Low rumble noise + stochastic wood crackle pops)
+        const bufferSize = ctx.sampleRate * 2.0;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          data[i] = white * 0.08;
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 150;
+
+        noise.connect(lowpass);
+        lowpass.connect(mainGain);
+        noise.start(0);
+        track.nodes.push(noise, lowpass);
+
+        const crackleGain = ctx.createGain();
+        crackleGain.gain.value = 1.0;
+        crackleGain.connect(mainGain);
+        track.nodes.push(crackleGain);
+
+        const triggerCrackle = () => {
+          if (!track.active || !audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const popGain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250 + Math.random() * 900, now);
+
+          popGain.gain.setValueAtTime(0, now);
+          popGain.gain.linearRampToValueAtTime(0.08, now + 0.005);
+          popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+
+          osc.connect(popGain);
+          popGain.connect(crackleGain);
+          osc.start(now);
+          osc.stop(now + 0.04);
+
+          const cleanupTimer = window.setTimeout(() => {
+            try { osc.disconnect(); popGain.disconnect(); } catch (e) {}
+          }, 60);
+          track.timers.push(cleanupTimer);
+        };
+
+        const scheduleCrackle = () => {
+          if (!track.active) return;
+          triggerCrackle();
+          const nextInterval = 90 + Math.random() * 380;
+          const timer = window.setTimeout(scheduleCrackle, nextInterval);
+          track.timers.push(timer);
+        };
+        scheduleCrackle();
+      } else if (id === 'crickets') {
+        // 5. Night Crickets (High pitch sine with rapid tremolo pulse)
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 4350;
+
+        const tremoloOsc = ctx.createOscillator();
+        tremoloOsc.type = 'sine';
+        tremoloOsc.frequency.value = 30;
+
+        const tremoloGain = ctx.createGain();
+        tremoloGain.gain.value = 0.5;
+
+        const envelopeGain = ctx.createGain();
+        envelopeGain.gain.value = 0.0;
+
+        tremoloOsc.connect(tremoloGain);
+        osc.connect(envelopeGain);
+        envelopeGain.connect(mainGain);
+
+        osc.start(0);
+        tremoloOsc.start(0);
+        track.nodes.push(osc, tremoloOsc, tremoloGain, envelopeGain);
+
+        const runCricketRhythm = () => {
+          if (!track.active || !audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          const now = ctx.currentTime;
+          envelopeGain.gain.setValueAtTime(0.0001, now);
+          envelopeGain.gain.linearRampToValueAtTime(0.04, now + 0.2);
+          envelopeGain.gain.setValueAtTime(0.04, now + 1.2);
+          envelopeGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+
+          const nextTimer = window.setTimeout(runCricketRhythm, 2200 + Math.random() * 1200);
+          track.timers.push(nextTimer);
+        };
+        runCricketRhythm();
+      } else if (id === 'ocean') {
+        // 6. Gentle Ocean Waves (Noise + lowpass + dedicated swellGain modulated by 13s LFO)
+        const bufferSize = ctx.sampleRate * 2.5;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          data[i] = 0.14 * white + 0.82 * lastOut;
+          lastOut = data[i];
+        }
+        const oceanSource = ctx.createBufferSource();
+        oceanSource.buffer = buffer;
+        oceanSource.loop = true;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 320;
+
+        const swellGain = ctx.createGain();
+        swellGain.gain.value = 0.5;
+
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 0.075; // ~13.3s wave cycle
+
+        const filterLfoGain = ctx.createGain();
+        filterLfoGain.gain.value = 180;
+
+        const ampLfoGain = ctx.createGain();
+        ampLfoGain.gain.value = 0.4;
+
+        lfo.connect(filterLfoGain);
+        filterLfoGain.connect(filter.frequency);
+
+        lfo.connect(ampLfoGain);
+        ampLfoGain.connect(swellGain.gain);
+
+        oceanSource.connect(filter);
+        filter.connect(swellGain);
+        swellGain.connect(mainGain);
+
+        oceanSource.start(0);
+        lfo.start(0);
+
+        track.nodes.push(oceanSource, filter, swellGain, lfo, filterLfoGain, ampLfoGain);
+      }
+    } catch (err) {
+      console.error(`Failed to start synth channel ${id}:`, err);
+      stopChannelAudio(id);
     }
   };
 
   // Toggle individual sound channels
   const toggleChannel = async (id: string) => {
-    initAudioContext();
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
+    const channel = soundChannels.find((ch) => ch.id === id);
+    if (!channel) return;
 
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
+    const nextActive = !channel.active;
 
-    setSoundChannels((prev) =>
-      prev.map((ch) => {
-        if (ch.id === id) {
-          const nextActive = !ch.active;
-          if (nextActive) {
-            // Start synthesizing
-            const { sourceNode, gainNode } = startSynthChannel(id, ctx, ch.gain);
-            return { ...ch, active: true, node: sourceNode, gainNode };
-          } else {
-            // Stop synthesizing
-            stopSynthChannel(ch);
-            return { ...ch, active: false, node: null, gainNode: null };
-          }
-        }
-        return ch;
-      })
-    );
-  };
-
-  const adjustChannelVolume = (id: string, vol: number) => {
-    setSoundChannels((prev) =>
-      prev.map((ch) => {
-        if (ch.id === id) {
-          if (ch.gainNode) {
-            ch.gainNode.gain.setValueAtTime(vol, audioCtxRef.current?.currentTime || 0);
-          }
-          return { ...ch, gain: vol };
-        }
-        return ch;
-      })
-    );
-  };
-
-  // Synthesizers
-  const startSynthChannel = (id: string, ctx: AudioContext, gainVal: number) => {
-    const mainGain = ctx.createGain();
-    mainGain.gain.setValueAtTime(gainVal, ctx.currentTime);
-    mainGain.connect(ctx.destination);
-
-    let sourceNode: AudioNode;
-
-    if (id === 'wind') {
-      // 1. Forest Breeze Synthesizer (Filtered Pink/White Noise)
-      const bufferSize = ctx.sampleRate * 2;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-
-      let lastOut = 0.0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        data[i] = 0.12 * white + 0.85 * lastOut; // Lowpass filter filter approximation
-        lastOut = data[i];
-      }
-
-      const noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = buffer;
-      noiseSource.loop = true;
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 350;
-      filter.Q.value = 1.0;
-
-      // Slow breathing wind gust LFO
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.12; // Slow gusts
-
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 200;
-
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-
-      noiseSource.connect(filter);
-      filter.connect(mainGain);
-
-      noiseSource.start(0);
-      lfo.start(0);
-
-      sourceNode = noiseSource;
-    } else if (id === 'rain') {
-      // 2. Soft Rain Crackle Synthesizer
-      const bufferSize = ctx.sampleRate * 1.5;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-
-      for (let i = 0; i < bufferSize; i++) {
-        // High frequency crackle with sparse dust noise
-        const white = Math.random() * 2 - 1;
-        const dust = Math.random() > 0.985 ? 0.4 * white : 0.01 * white;
-        data[i] = dust;
-      }
-
-      const rainSource = ctx.createBufferSource();
-      rainSource.buffer = buffer;
-      rainSource.loop = true;
-
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.value = 1800;
-      bandpass.Q.value = 1.5;
-
-      rainSource.connect(bandpass);
-      bandpass.connect(mainGain);
-
-      rainSource.start(0);
-      sourceNode = rainSource;
+    if (nextActive) {
+      await startChannelAudio(id, channel.gain);
     } else {
-      // 3. Singing Birds Synthesizer (Fast sweeps of sine oscillators triggered at random times)
-      const birdGain = ctx.createGain();
-      birdGain.gain.value = 0.0; // Started mute, swept dynamically
-      birdGain.connect(mainGain);
-
-      const triggerBirdChirp = () => {
-        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
-        
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const sweepGain = ctx.createGain();
-
-        osc.type = 'sine';
-        // Classic bird chirp sweep (e.g. 2500Hz -> 4500Hz)
-        const baseFreq = 2200 + Math.random() * 1200;
-        osc.frequency.setValueAtTime(baseFreq, now);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.15);
-        
-        sweepGain.gain.setValueAtTime(0, now);
-        sweepGain.gain.linearRampToValueAtTime(0.04, now + 0.02);
-        sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        
-        osc.connect(sweepGain);
-        sweepGain.connect(birdGain);
-        
-        osc.start(now);
-        osc.stop(now + 0.16);
-      };
-
-      const scheduleBirds = () => {
-        triggerBirdChirp();
-        birdTimerRef.current = window.setTimeout(scheduleBirds, 1500 + Math.random() * 3500);
-      };
-
-      scheduleBirds();
-      sourceNode = birdGain;
+      stopChannelAudio(id);
     }
 
-    return { sourceNode, gainNode: mainGain };
+    setSoundChannels((prev) =>
+      prev.map((ch) => (ch.id === id ? { ...ch, active: nextActive } : ch))
+    );
   };
 
-  const stopSynthChannel = (ch: SoundChannel) => {
-    if (ch.id === 'birds' && birdTimerRef.current) {
-      clearTimeout(birdTimerRef.current);
-    }
-    if (ch.node) {
+  // Adjust volume for a specific channel
+  const adjustChannelVolume = (id: string, vol: number) => {
+    const track = activeAudioChannelsRef.current[id];
+    if (track && track.mainGain && audioCtxRef.current) {
       try {
-        (ch.node as any).stop();
-      } catch (e) {
-        // Gain nodes and scriptprocessors might not have stop
-      }
-      ch.node.disconnect();
+        track.mainGain.gain.setValueAtTime(vol, audioCtxRef.current.currentTime);
+      } catch (e) {}
     }
-    if (ch.gainNode) {
-      ch.gainNode.disconnect();
+    setSoundChannels((prev) =>
+      prev.map((ch) => (ch.id === id ? { ...ch, gain: vol } : ch))
+    );
+  };
+
+  // Mute / Stop all sound channels at once
+  const stopAllChannels = () => {
+    soundChannels.forEach((ch) => {
+      stopChannelAudio(ch.id);
+    });
+    setSoundChannels((prev) => prev.map((ch) => ({ ...ch, active: false })));
+  };
+
+  // Apply one-click sound preset
+  const applyPreset = async (presetId: 'rain_wind' | 'fire_night' | 'ocean_breeze') => {
+    stopAllChannels();
+    if (presetId === 'rain_wind') {
+      await startChannelAudio('rain', 0.16);
+      await startChannelAudio('wind', 0.12);
+      setSoundChannels((prev) =>
+        prev.map((ch) => ({
+          ...ch,
+          active: ch.id === 'rain' || ch.id === 'wind'
+        }))
+      );
+    } else if (presetId === 'fire_night') {
+      await startChannelAudio('campfire', 0.16);
+      await startChannelAudio('crickets', 0.08);
+      setSoundChannels((prev) =>
+        prev.map((ch) => ({
+          ...ch,
+          active: ch.id === 'campfire' || ch.id === 'crickets'
+        }))
+      );
+    } else if (presetId === 'ocean_breeze') {
+      await startChannelAudio('ocean', 0.16);
+      await startChannelAudio('wind', 0.10);
+      setSoundChannels((prev) =>
+        prev.map((ch) => ({
+          ...ch,
+          active: ch.id === 'ocean' || ch.id === 'wind'
+        }))
+      );
     }
   };
 
@@ -661,9 +1175,14 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
   // Clean up sounds on destroy
   useEffect(() => {
     return () => {
+      Object.keys(activeAudioChannelsRef.current).forEach((id) => {
+        stopChannelAudio(id);
+      });
       if (birdTimerRef.current) clearTimeout(birdTimerRef.current);
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {}
       }
     };
   }, []);
@@ -839,8 +1358,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                 <span className="text-emerald-700 underline decoration-emerald-200 decoration-wavy font-bold">초록을 켤 시간</span>
               </h1>
               <p className="text-xs sm:text-sm text-emerald-800/80 max-w-xl font-medium leading-relaxed">
-                하루 종일 무감각한 모니터 너머, 붉은색 컴파일 에러와 미로 같은 디버깅 대기열에 갇혀 지쳐버린 엔지니어들을 위한 숲의 정원입니다. 
-                에러를 싱그러운 흙에 묻고, 자연의 소리와 깊은 호흡을 머금은 위로와 처방전을 싹 틔워 보세요.
+                오늘도 모니터 불빛 아래서 붉은 에러 줄과 싸우며 외롭게 고군분투하는 방구석 개발자들을 위한 마음 쉼터입니다. 
+                지친 마음과 버그를 흙에 묻고, 자연의 소리와 함께 따뜻한 위로와 해결의 싹을 틔워보세요.
               </p>
             </div>
 
@@ -848,15 +1367,15 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
             <div className="grid grid-cols-3 gap-6 pt-4 border-t border-emerald-50 max-w-md" id="drift-stats">
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">100%</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">싱그러운 녹색색채</span>
+                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">눈이 편안한 쉼터</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">HTML5</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">자연 음향 합성</span>
+                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">마음을 지키는 소리</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">Gemini</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">식물학적 처방전</span>
+                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">맞춤형 에러 처방전</span>
               </div>
             </div>
 
@@ -872,7 +1391,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                 <span className="absolute inset-0 bg-gradient-to-r from-emerald-800/20 via-emerald-700/10 to-emerald-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
                 <Sprout className="w-4 h-4 text-emerald-400 group-hover:animate-bounce shrink-0" />
-                <span className="relative z-10">지친 마음 비우기: 에러 퇴비화 정원 가기</span>
+                <span className="relative z-10">에러 털어내고 쉼터로 가기 🪴</span>
                 <ArrowRight className="w-4 h-4 text-emerald-300 group-hover:translate-x-1 transition-transform" />
               </motion.button>
 
@@ -880,7 +1399,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                 onClick={() => setIsGuideOpen(true)}
                 className="inline-flex items-center space-x-2 bg-white text-emerald-900 border border-emerald-150 hover:bg-emerald-50/50 px-5 py-3.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shadow-3xs"
               >
-                <span>식물 조언 가이드</span>
+                <span>초보 가이드 보기</span>
               </button>
             </div>
           </div>
@@ -898,53 +1417,101 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                 <div className="flex items-center space-x-2">
                   <Heart className="w-4 h-4 text-emerald-600 animate-pulse" />
                   <span className="text-2xs font-bold text-emerald-950">가든 숲속 사운드 믹서</span>
+                  {soundChannels.some((c) => c.active) && (
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                      {soundChannels.filter((c) => c.active).length}개 재생 중
+                    </span>
+                  )}
                 </div>
-                <span className="text-3xs font-mono font-bold text-emerald-700 uppercase">Live Synth</span>
+                <div className="flex items-center space-x-2">
+                  {soundChannels.some((c) => c.active) && (
+                    <button
+                      onClick={stopAllChannels}
+                      className="text-[10px] font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-md transition-colors border border-rose-200/50"
+                      title="모든 사운드 끄기"
+                    >
+                      전체 정지
+                    </button>
+                  )}
+                  <span className="text-3xs font-mono font-bold text-emerald-700 uppercase">Live Synth</span>
+                </div>
+              </div>
+
+              {/* Quick Sound Presets */}
+              <div className="my-2.5 relative z-10 flex flex-wrap gap-1.5 items-center">
+                <span className="text-[10px] font-bold text-emerald-800/80 mr-1">빠른 추천:</span>
+                <button
+                  onClick={() => applyPreset('rain_wind')}
+                  className="px-2.5 py-1 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-[10px] font-semibold rounded-lg border border-emerald-200/60 transition-all shadow-2xs hover:scale-102"
+                >
+                  🌧️ 비 & 숲바람
+                </button>
+                <button
+                  onClick={() => applyPreset('fire_night')}
+                  className="px-2.5 py-1 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-[10px] font-semibold rounded-lg border border-amber-200/60 transition-all shadow-2xs hover:scale-102"
+                >
+                  🔥 모닥불 & 풀벌레
+                </button>
+                <button
+                  onClick={() => applyPreset('ocean_breeze')}
+                  className="px-2.5 py-1 bg-sky-50/80 hover:bg-sky-100 text-sky-900 text-[10px] font-semibold rounded-lg border border-sky-200/60 transition-all shadow-2xs hover:scale-102"
+                >
+                  🌊 밤바다 & 미풍
+                </button>
               </div>
 
               {/* Sound Channels Controllers */}
-              <div className="space-y-4 my-5 relative z-10" id="soundscape-controllers">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2 relative z-10" id="soundscape-controllers">
                 {soundChannels.map((ch) => (
-                  <div key={ch.id} className="space-y-1.5 p-2 bg-white/60 border border-emerald-105/30 rounded-xl">
+                  <div
+                    key={ch.id}
+                    className={`p-2.5 rounded-xl border transition-all ${
+                      ch.active
+                        ? 'bg-emerald-900/5 border-emerald-300 shadow-2xs ring-1 ring-emerald-400/30'
+                        : 'bg-white/70 border-emerald-100/60 hover:bg-white'
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => toggleChannel(ch.id)}
-                        className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg text-3xs font-bold transition-all border ${
+                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1.2 rounded-lg text-3xs font-bold transition-all border ${
                           ch.active
-                            ? 'bg-emerald-850 text-white border-emerald-900'
+                            ? 'bg-emerald-850 text-white border-emerald-900 shadow-xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
                         }`}
                       >
-                        {ch.active ? <Volume2 className="w-3 h-3 animate-bounce" /> : <VolumeX className="w-3 h-3" />}
+                        {ch.active ? <Volume2 className="w-3 h-3 animate-bounce" /> : <VolumeX className="w-3 h-3 text-gray-400" />}
                         <span>{ch.label}</span>
                       </button>
 
                       {ch.active && (
-                        <span className="text-4xs font-mono font-semibold text-emerald-700">Volume: {Math.round(ch.gain * 100)}%</span>
+                        <span className="text-[10px] font-mono font-bold text-emerald-800">
+                          {Math.round((ch.gain / 0.4) * 100)}%
+                        </span>
                       )}
                     </div>
 
                     {ch.active && (
-                      <div className="flex items-center space-x-2 px-1">
-                        <span className="text-4xs text-emerald-600 font-bold">-</span>
+                      <div className="flex items-center space-x-1.5 mt-2 px-1">
+                        <span className="text-[10px] text-emerald-700 font-bold">-</span>
                         <input
                           type="range"
-                          min="0"
+                          min="0.01"
                           max="0.4"
                           step="0.01"
                           value={ch.gain}
                           onChange={(e) => adjustChannelVolume(ch.id, parseFloat(e.target.value))}
-                          className="w-full accent-emerald-800 h-1 rounded-lg bg-emerald-100"
+                          className="w-full accent-emerald-800 h-1.5 rounded-lg bg-emerald-200/60 cursor-pointer"
                         />
-                        <span className="text-4xs text-emerald-600 font-bold">+</span>
+                        <span className="text-[10px] text-emerald-700 font-bold">+</span>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
 
-              <div className="bg-white/80 p-3 rounded-xl border border-emerald-50 text-3xs text-emerald-800/80 leading-relaxed font-medium relative z-10">
-                헤드폰을 착용하고 마음에 드는 자연 소리 채널을 활성화해 보세요. 브라우저에서 직접 생성한 부드러운 화이트 노이즈가 주변 소음을 감싸 안아줍니다.
+              <div className="bg-white/80 p-3 rounded-xl border border-emerald-50 text-3xs text-emerald-800/80 leading-relaxed font-medium relative z-10 mt-2">
+                헤드폰을 착용하고 마음에 드는 자연 소리 채널을 조합해 보세요. 브라우저 실시간 Web Audio 신디사이저로 생성된 온전한 자연 음향이 복잡한 생각을 가라앉혀 줍니다.
               </div>
             </div>
 
@@ -1018,8 +1585,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
       </section>
 
       {/* 2. Navigation Tabs */}
-      <div className="flex items-center justify-center border-b border-emerald-100/40 pb-1 max-w-md mx-auto" id="detox-tabs">
-        {(['garden', 'archive', 'wisdom'] as const).map((tab) => (
+      <div className="flex items-center justify-center border-b border-emerald-100/40 pb-1 max-w-lg mx-auto" id="detox-tabs">
+        {(['garden', 'community', 'archive', 'wisdom'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1027,7 +1594,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
               activeTab === tab ? 'text-emerald-900 font-extrabold' : 'text-emerald-500 hover:text-emerald-850'
             }`}
           >
-            {tab === 'garden' ? '🍃 가든 쉼터' : tab === 'archive' ? '📦 내 처방전 보관함' : '📖 식물학 기법서'}
+            {tab === 'garden' ? '🍃 가든 쉼터' : tab === 'community' ? '🌸 정원 광장' : tab === 'archive' ? '📦 내 보관함' : '📖 기법서'}
             {activeTab === tab && (
               <motion.div
                 layoutId="activeTabUnderline"
@@ -1223,6 +1790,112 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                     </motion.div>
                   </div>
 
+                  {/* Natural Sound Selector for Meditation */}
+                  <div className="w-full max-w-xs space-y-2 py-3 border-t border-emerald-100/50 relative z-10">
+                    <span className="block text-[9px] font-bold text-emerald-800/80 uppercase tracking-widest text-center font-mono">
+                      명상 배경음 선택 (Grounding Sounds)
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (activeMeditationSound === 'rain') {
+                            if (isMeditationSoundPlaying) {
+                              stopMeditationSound();
+                            } else if (breathPhase !== 'idle') {
+                              startMeditationSound('rain');
+                            }
+                          } else {
+                            setActiveMeditationSound('rain');
+                            if (breathPhase !== 'idle') {
+                              startMeditationSound('rain');
+                            }
+                          }
+                        }}
+                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                          activeMeditationSound === 'rain'
+                            ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
+                            : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <Droplet className="w-3.5 h-3.5" />
+                        <span>빗소리</span>
+                        {activeMeditationSound === 'rain' && breathPhase !== 'idle' && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse mt-0.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (activeMeditationSound === 'forest') {
+                            if (isMeditationSoundPlaying) {
+                              stopMeditationSound();
+                            } else if (breathPhase !== 'idle') {
+                              startMeditationSound('forest');
+                            }
+                          } else {
+                            setActiveMeditationSound('forest');
+                            if (breathPhase !== 'idle') {
+                              startMeditationSound('forest');
+                            }
+                          }
+                        }}
+                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                          activeMeditationSound === 'forest'
+                            ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
+                            : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <Wind className="w-3.5 h-3.5" />
+                        <span>숲소리</span>
+                        {activeMeditationSound === 'forest' && breathPhase !== 'idle' && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse mt-0.5" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (activeMeditationSound === 'ocean') {
+                            if (isMeditationSoundPlaying) {
+                              stopMeditationSound();
+                            } else if (breathPhase !== 'idle') {
+                              startMeditationSound('ocean');
+                            }
+                          } else {
+                            setActiveMeditationSound('ocean');
+                            if (breathPhase !== 'idle') {
+                              startMeditationSound('ocean');
+                            }
+                          }
+                        }}
+                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                          activeMeditationSound === 'ocean'
+                            ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
+                            : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <Waves className="w-3.5 h-3.5" />
+                        <span>파도 소리</span>
+                        {activeMeditationSound === 'ocean' && breathPhase !== 'idle' && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse mt-0.5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {breathPhase === 'idle' ? (
+                      <p className="text-[9px] text-emerald-800/60 text-center font-medium">
+                        호흡을 시작하면 선택한 자연의 소리가 자동으로 흐릅니다.
+                      </p>
+                    ) : (
+                      <p className="text-[9px] text-emerald-800/80 text-center font-semibold flex items-center justify-center space-x-1 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1"></span>
+                        <span>자연 음향이 흘러나오는 중...</span>
+                      </p>
+                    )}
+                  </div>
+
                   {/* Controller panel */}
                   <div className="text-center w-full space-y-3 relative z-10">
                     <span className="text-2xs font-extrabold text-emerald-950 block min-h-[16px]">
@@ -1300,6 +1973,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                         setPrescription(null);
                         setIsSprouting(false);
                         setBreathPhase('idle');
+                        setIsSharedToCommunity(false);
                       }}
                       className="self-start sm:self-center px-4 py-2 border border-emerald-200 text-emerald-800 hover:bg-emerald-50 rounded-xl text-3xs font-bold transition-colors cursor-pointer inline-flex items-center space-x-1.5"
                     >
@@ -1419,9 +2093,9 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                       </div>
 
                       <div className="space-y-1">
-                        <span className="text-3xs font-extrabold text-emerald-900 font-mono">성장 등급: 4단계 가든 묘목 완료</span>
+                        <span className="text-3xs font-extrabold text-emerald-900 font-mono">성장 완료: 4단계 치유 묘목 🪴</span>
                         <p className="text-[10px] text-gray-400 leading-relaxed">
-                          에러를 영양 가득한 발효토로 삭혀낸 뒤 물을 먹여 싹을 틔운 당신의 치유목입니다. 이 기록은 좌측 하단 '내 처방전 보관함'에 보존되어 언제든 꺼내볼 수 있습니다.
+                          답답했던 에러를 털어내고 피어난 소중한 치유의 식물입니다. 이 기록은 '내 보관함'에 소중히 보존되어 언제든 다시 꺼내볼 수 있습니다.
                         </p>
                       </div>
 
@@ -1443,12 +2117,40 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                           ) : (
                             <>
                               <FileText className="w-3.5 h-3.5" />
-                              <span>식물 처방전 엽서 내보내기 📬</span>
+                              <span>식물 처방전 엽서 복사하기 📬</span>
                             </>
                           )}
                         </button>
+
+                        <button
+                          onClick={handleShareToCommunity}
+                          disabled={isSharedToCommunity || isSharingToCommunity}
+                          className={`w-full py-2.5 px-4 rounded-xl text-3xs font-extrabold transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
+                            isSharedToCommunity
+                              ? 'bg-emerald-800 text-white shadow-xs'
+                              : 'bg-white text-emerald-900 hover:bg-emerald-50 border border-emerald-300'
+                          }`}
+                        >
+                          {isSharingToCommunity ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin animate-infinite" />
+                              <span>정원 광장에 심는 중... 🌸</span>
+                            </>
+                          ) : isSharedToCommunity ? (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-300" />
+                              <span>정원 광장에 공유 완료! 🌸</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sprout className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>정원 광장 커뮤니티에 공유하기 💚</span>
+                            </>
+                          )}
+                        </button>
+                        
                         <p className="text-[9px] text-gray-400 font-medium">
-                          클릭 시 감성적인 텍스트 엽서 템플릿이 복사되어 슬랙이나 SNS에 쉽게 공유할 수 있습니다.
+                          처방전 엽서를 복사하거나 커뮤니티 광장에 공유해서, 방구석에서 함께 고군분투하는 다른 개발자들과 따뜻한 응원을 나눠보세요.
                         </p>
                       </div>
                     </div>
@@ -1473,8 +2175,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-md font-bold text-emerald-950 font-display">지탱해 낸 인내의 기록 보관함</h3>
-                <p className="text-3xs text-emerald-700/80 mt-0.5">그동안 퇴비로 묻어 정원으로 길러낸 소중한 디버깅 기록들이 저장되어 있습니다.</p>
+                <h3 className="text-md font-bold text-emerald-950 font-display">나의 디톡스 처방전 보관함</h3>
+                <p className="text-3xs text-emerald-700/80 mt-0.5">그동안 에러를 털어내며 정성껏 키워낸 나만의 치유 및 디버깅 기록들입니다.</p>
               </div>
 
               {savedLogs.length > 0 && (
@@ -1759,6 +2461,23 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
           </motion.div>
         )}
 
+        {/* TAB 1.5: Community Shared Garden Square */}
+        {activeTab === 'community' && (
+          <motion.div
+            key="community-tab"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <CommunitySquare 
+              currentUser={user}
+              customDisplayName={customDisplayName}
+              customGardenerTitle={customGardenerTitle}
+              customPhotoURL={customPhotoURL}
+            />
+          </motion.div>
+        )}
+
         {/* TAB 3: Wisdom guide of botanical tech-analogy */}
         {activeTab === 'wisdom' && (
           <motion.div
@@ -1770,9 +2489,9 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
             id="botanical-philosophy"
           >
             <div className="text-center max-w-xl mx-auto space-y-3">
-              <h3 className="text-md font-bold text-emerald-950 font-display">정원사가 전하는 소프트웨어 식물학</h3>
+              <h3 className="text-md font-bold text-emerald-950 font-display">방구석 개발자를 위한 생각 정리법</h3>
               <p className="text-3xs text-emerald-800/80">
-                인프라의 구조와 자라나는 묘목의 가꾸기법은 거짓말처럼 닮아 있습니다. 마음이 소란스러울 때 가볍게 읽어보는 아키텍처 다이어트 가이드입니다.
+                복잡한 소프트웨어 아키텍처와 자연의 섭리는 서로 닮아 있습니다. 문제 해결이 막힐 때 가볍게 읽어보세요.
               </p>
               <div className="flex justify-center pt-1">
                 <button
@@ -1780,7 +2499,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout }: DetoxLandi
                   className="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-white text-3xs font-bold rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center space-x-1.5"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>SW 브레인스토밍 기법 가이드북 (TRIZ, SCAMPER, ERRC) 열기</span>
+                  <span>에러 해결 가이드북 (TRIZ, SCAMPER, ERRC) 보기</span>
                 </button>
               </div>
             </div>

@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /user_profiles/{userId} {
+      allow get: if true; // Publicly readable for avatars and cards
+      allow list: if false; // Block query scraping of all profiles
+      
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && incoming().uid == userId
+        && incoming().displayName is string && incoming().displayName.size() <= 100
+        && incoming().gardenerTitle is string && incoming().gardenerTitle.size() <= 100
+        && incoming().photoURL is string && incoming().photoURL.size() <= 3000
+        && incoming().createdAt is string && incoming().createdAt.size() <= 100
+        && incoming().updatedAt is string && incoming().updatedAt.size() <= 100;
+
+      allow update: if isSignedIn() 
+        && request.auth.uid == userId
+        && incoming().uid == userId
+        && incoming().displayName is string && incoming().displayName.size() <= 100
+        && incoming().gardenerTitle is string && incoming().gardenerTitle.size() <= 100
+        && incoming().photoURL is string && incoming().photoURL.size() <= 3000
+        && incoming().updatedAt is string && incoming().updatedAt.size() <= 100
+        && incoming().createdAt == existing().createdAt; // createdAt is immutable
+    }
+
+    // Community Posts Rules
+    match /community_posts/{postId} {
+      allow read: if true; // Publicly readable so everyone sees other people's board!
+      
+      allow create: if incoming().nickname is string && incoming().nickname.size() <= 100
+        && incoming().errorLog is string && incoming().errorLog.size() <= 5000
+        && incoming().frustration is string && incoming().frustration.size() <= 2000
+        && incoming().errorType is string && incoming().errorType.size() <= 50
+        && incoming().plantType is string && incoming().plantType.size() <= 50
+        && incoming().remedy is string && incoming().remedy.size() <= 10000
+        && incoming().cheers is number
+        && incoming().timestamp is string && incoming().timestamp.size() <= 100;
+
+      allow update: if (
+        // Action: Cheer / Increment Cheers (anyone can cheer public posts!)
+        incoming().diff(existing()).affectedKeys().hasOnly(['cheers'])
+        && incoming().cheers == existing().cheers + 1
+      );
+    }
+  }
+}

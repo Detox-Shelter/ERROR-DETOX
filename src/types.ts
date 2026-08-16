@@ -59,3 +59,13 @@ export interface DriveFile {
   modifiedTime: string;
 }
 
+export interface PurifiedError {
+  id: string;
+  timestamp: string; // ISO string
+  errorLog: string;
+  frustration: string;
+  errorType: 'delay' | 'network' | 'memory' | 'legacy' | 'other';
+  plantType: 'eucalyptus' | 'bamboo' | 'monstera' | 'ivy' | 'recommend';
+  remedy: string;
+}
+

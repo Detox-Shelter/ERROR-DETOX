@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "community_posts": {
+      "title": "Community Post",
+      "description": "A shared error detox success story / growth milestone from a user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "The unique ID of the post"
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "ISO 8601 string of creation time"
+        },
+        "nickname": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Display name of the gardener sharing this story"
+        },
+        "errorLog": {
+          "type": "string",
+          "maxLength": 3000,
+          "description": "The raw system error log or message"
+        },
+        "frustration": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "The emotional or cognitive frustration description"
+        },
+        "errorType": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "The category of error: delay, network, memory, legacy, other"
+        },
+        "plantType": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "The botanical counterpart: eucalyptus, bamboo, monstera, ivy, recommend"
+        },
+        "remedy": {
+          "type": "string",
+          "maxLength": 5000,
+          "description": "The AI-generated botanical purification remedy"
+        },
+        "cheers": {
+          "type": "number",
+          "description": "Number of supportive water sprinkles received"
+        }
+      },
+      "required": ["id", "timestamp", "nickname", "frustration", "remedy"]
+    },
+    "user_profiles": {
+      "title": "User Profile",
+      "description": "A user's profile information containing display name and custom gardener title.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "The unique user ID"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Displayed name of the gardener"
+        },
+        "gardenerTitle": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Custom title of the gardener"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "ISO 8601 string of last update"
+        }
+      },
+      "required": ["uid", "displayName", "gardenerTitle", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/community_posts/{postId}": {
+      "schema": "community_posts",
+      "description": "Collection of all shared error-detox posts."
+    },
+    "/user_profiles/{userId}": {
+      "schema": "user_profiles",
+      "description": "Collection of user profile records."
+    }
+  }
+}

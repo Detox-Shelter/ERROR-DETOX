@@ -3,8 +3,87 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
+
+const COMMUNITY_FILE_PATH = path.join(process.cwd(), "community_posts.json");
+
+// Define community post interface
+interface SharedPost {
+  id: string;
+  timestamp: string;
+  nickname: string;
+  errorLog: string;
+  frustration: string;
+  errorType: 'delay' | 'network' | 'memory' | 'legacy' | 'other';
+  plantType: 'eucalyptus' | 'bamboo' | 'monstera' | 'ivy' | 'recommend';
+  remedy: string;
+  cheers: number;
+}
+
+// Initial seed posts to make the community look lively right away
+const COMMUNITY_SEEDS: SharedPost[] = [
+  {
+    id: "share-1",
+    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+    nickname: "야근하는몬스테라",
+    errorLog: "NullPointerException: Attempt to invoke virtual method 'String.trim()' on a null object reference",
+    frustration: "모바일 API 연동 중에 null 체크 누락으로 메인 홈화면이 통째로 충돌났습니다. 밤샘 릴리즈였는데 머리가 아찔하네요.",
+    errorType: "other",
+    plantType: "monstera",
+    remedy: "### 🪴 몬스테라 넓은 그늘 처방전\n정말 아찔하고 당황스러운 밤이었겠습니다. 하지만 그늘에서 숨 고르듯 차분히 정화될 수 있는 해결책을 전해드려요.\n\n#### 🌿 가드너의 조언\n- 이럴 때는 자바스크립트의 옵셔널 체이닝 `?.` 이나 디폴트 빈 문자열 폴백을 적용하면 안전하게 충돌을 예방할 수 있답니다.",
+    cheers: 14
+  },
+  {
+    id: "share-2",
+    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago
+    nickname: "대나무서버수호자",
+    errorLog: "FATAL: remaining connection slots are reserved for non-replication superuser connections",
+    frustration: "갑자기 동시 사용자가 몰려서 DB 세션 풀이 다 찼대요... 연결 끊겨서 난리가 났었습니다.",
+    errorType: "network",
+    plantType: "bamboo",
+    remedy: "### 🎋 대나무 유연한 연결 처방전\n폭풍처럼 불어온 유입에도 꺾이지 않는 단단한 연결망의 정화 기운을 보냅니다.\n\n#### 🌿 가드너의 조언\n- 커넥션 풀 누수(leak)가 없는지 검증하시고, 서킷 브레이커와 세션 타임아웃을 다듬어 주시는 것을 적극 권장합니다.",
+    cheers: 8
+  },
+  {
+    id: "share-3",
+    timestamp: new Date(Date.now() - 3600000 * 12).toISOString(), // 12 hours ago
+    nickname: "유칼립투스커피중독",
+    errorLog: "API response took 18240ms. Gateway timeout.",
+    frustration: "비동기 배치 돌릴 때 타임아웃에 자꾸 걸려서 퇴근이 늦어집니다. 왜 이리 무거운지 모르겠어요.",
+    errorType: "delay",
+    plantType: "eucalyptus",
+    remedy: "### 🌿 상쾌한 유칼립투스 순환 처방전\n정체된 비동기 흐름의 가래를 시원하고 향기롭게 뚫어드릴게요.\n\n#### 🌿 가드너의 조언\n- 벌크 성격의 배치는 작은 척(Chunk) 단위로 분할(Paginated Process)하거나, 메인 스레드 밖으로 비동기 큐를 구축해 백그라운드로 격리해 보세요.",
+    cheers: 21
+  }
+];
+
+// Helper to read posts from JSON
+function readCommunityPosts(): SharedPost[] {
+  try {
+    if (fs.existsSync(COMMUNITY_FILE_PATH)) {
+      const data = fs.readFileSync(COMMUNITY_FILE_PATH, "utf-8");
+      return JSON.parse(data);
+    } else {
+      // Create with default seeds if it doesn't exist
+      fs.writeFileSync(COMMUNITY_FILE_PATH, JSON.stringify(COMMUNITY_SEEDS, null, 2), "utf-8");
+      return COMMUNITY_SEEDS;
+    }
+  } catch (err) {
+    console.error("Failed to read community posts:", err);
+    return COMMUNITY_SEEDS;
+  }
+}
+
+// Helper to write posts to JSON
+function writeCommunityPosts(posts: SharedPost[]) {
+  try {
+    fs.writeFileSync(COMMUNITY_FILE_PATH, JSON.stringify(posts, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to write community posts:", err);
+  }
+}
 
 // Shared Gemini Client
 const ai = new GoogleGenAI({
@@ -110,6 +189,72 @@ async function startServer() {
     } catch (err: any) {
       console.error("Gemini API Error in backend:", err);
       res.status(500).json({ error: err.message || "마음 환기 메시지 생성 도중 오류가 발생했습니다." });
+    }
+  });
+
+  // GET: Fetch all shared community posts
+  app.get("/api/community", (req, res) => {
+    try {
+      const posts = readCommunityPosts();
+      // Sort posts by timestamp descending so newest appear first
+      const sorted = [...posts].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      res.json(sorted);
+    } catch (err: any) {
+      console.error("Failed to get community posts:", err);
+      res.status(500).json({ error: "정원 광장 일지를 가져오는데 실패했습니다." });
+    }
+  });
+
+  // POST: Share a purified error with the community
+  app.post("/api/community", (req, res) => {
+    try {
+      const { nickname, errorLog, frustration, errorType, plantType, remedy } = req.body;
+
+      if (!frustration || !remedy) {
+        return res.status(400).json({ error: "필수 입력 항목(마음 한마디, 처방전)이 누락되었습니다." });
+      }
+
+      const posts = readCommunityPosts();
+      const newPost: SharedPost = {
+        id: "share-" + Date.now(),
+        timestamp: new Date().toISOString(),
+        nickname: (nickname || "익명의정원사").slice(0, 30),
+        errorLog: (errorLog || "").slice(0, 3000),
+        frustration: frustration.slice(0, 1000),
+        errorType: errorType || "other",
+        plantType: plantType || "recommend",
+        remedy: remedy,
+        cheers: 0
+      };
+
+      posts.push(newPost);
+      writeCommunityPosts(posts);
+
+      res.status(210).json(newPost);
+    } catch (err: any) {
+      console.error("Failed to save community post:", err);
+      res.status(500).json({ error: "정원 광장에 일지를 공유하는 도중 에러가 발생했습니다." });
+    }
+  });
+
+  // POST: Cheer a community post (Support/Like)
+  app.post("/api/community/:id/cheer", (req, res) => {
+    try {
+      const { id } = req.params;
+      const posts = readCommunityPosts();
+      const postIndex = posts.findIndex(p => p.id === id);
+
+      if (postIndex === -1) {
+        return res.status(404).json({ error: "해당 일지를 찾을 수 없습니다." });
+      }
+
+      posts[postIndex].cheers = (posts[postIndex].cheers || 0) + 1;
+      writeCommunityPosts(posts);
+
+      res.json({ id: posts[postIndex].id, cheers: posts[postIndex].cheers });
+    } catch (err: any) {
+      console.error("Failed to cheer post:", err);
+      res.status(500).json({ error: "응원 메시지를 보내는 도중 에러가 발생했습니다." });
     }
   });
 

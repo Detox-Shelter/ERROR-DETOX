@@ -1,6 +1,6 @@
 {
   "name": "Error Detox Garden",
   "description": "에러 로그를 퇴비 삼아 푸른 정원을 가꾸며 힐링하는 '에러 디톡스 정원'입니다.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

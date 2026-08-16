@@ -17,9 +17,119 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { PurifiedError } from '../types';
+import DetoxDashboard from './DetoxDashboard';
+import GardenSeedlingVisual from './GardenSeedlingVisual';
 
 // Import the generated botanical image safely
 import leafDecor from '../assets/images/botanical_leaf_decor_1784084589115.jpg';
+
+// Predefined seed history logs to enrich the first impression of the garden
+const DEFAULT_HISTORY: PurifiedError[] = [
+  {
+    id: 'seed-1',
+    timestamp: '2026-07-14T10:15:00.000Z',
+    errorLog: 'java.lang.OutOfMemoryError: Java heap space',
+    frustration: '배포 전날 대용량 로그 적재하다가 힙메모리가 터져서 주말 반납할 뻔했어요.',
+    errorType: 'memory',
+    plantType: 'monstera',
+    remedy: '### 🪴 몬스테라 분갈이 처방전\n무거운 힙메모리 찌꺼기를 흡수하여 싱그러운 초록 잎사귀로 피워냈습니다.\n\n#### 🌿 가드너의 조언\n- 가비지 컬렉터가 과도하게 무거워질 때는 버퍼 크기 조절 및 스트림 분할 처리를 검토해 보세요.'
+  },
+  {
+    id: 'seed-2',
+    timestamp: '2026-07-14T14:30:00.000Z',
+    errorLog: 'Error: Connection lost to database server at 10.0.4.15:5432',
+    frustration: '인프라 점검 중에 갑자기 커넥션 끊겨서 서비스 전체가 휘청였습니다.',
+    errorType: 'network',
+    plantType: 'bamboo',
+    remedy: '### 🎋 대나무 연결망 강화 처방전\n땅속 깊은 뿌리로 영양분을 안정적으로 연결하듯 데이터베이스 연결을 단단히 정화했습니다.\n\n#### 🌿 가드너의 조언\n- 커넥션 풀 최소 크기를 유지하고 자동 재연결(Keep-Alive) 설정을 강화하여 예기치 못한 단절에 대비하세요.'
+  },
+  {
+    id: 'seed-3',
+    timestamp: '2026-07-15T09:00:00.000Z',
+    errorLog: 'Loading timeout exceeded after 15000ms. Retrying...',
+    frustration: '비동기 루프 안에서 응답이 무한 대기에 걸려 모바일 화면이 하얗게 굳어버렸어요.',
+    errorType: 'delay',
+    plantType: 'eucalyptus',
+    remedy: '### 🌿 차분한 유칼립투스 순환 처방전\n정체된 스레드와 로딩 지연을 상쾌하게 정화했습니다.\n\n#### 🌿 가드너의 조언\n- 비동기 대기 처리에 타임아웃 서킷 브레이커 패턴을 적용하여, 지연이 발생할 시 사용자에게 즉각 피드백을 전달할 수 있도록 순환 구조를 만드세요.'
+  },
+  {
+    id: 'seed-4',
+    timestamp: '2026-07-15T11:45:00.000Z',
+    errorLog: 'function renderLegacyCartItem(...) { // TODO: Refactor this 2018 spaghetti... }',
+    frustration: '7년 전에 짜인 암호 같은 레거시 카트 코드를 분석하느라 골머리를 앓았습니다.',
+    errorType: 'legacy',
+    plantType: 'ivy',
+    remedy: '### 🍀 아이비 지탱 처방전\n얽히고설킨 레거시 코드의 실타래를 지혜롭고 든든한 초록 지지대로 삼았습니다.\n\n#### 🌿 가드너의 조언\n- 한 번에 대대적으로 리팩토링하기보다, 마이크로 유닛 테스트를 감싸서 조금씩 불필요한 줄기를 쳐내듯 정화해 나가세요.'
+  },
+  {
+    id: 'seed-5',
+    timestamp: '2026-07-15T16:20:00.000Z',
+    errorLog: 'Uncaught TypeError: Cannot read properties of undefined (reading "status")',
+    frustration: '갑자기 한밤중에 들어온 예기치 못한 API 포맷 에러로 가슴이 쿵쾅거렸습니다.',
+    errorType: 'other',
+    plantType: 'recommend',
+    remedy: '### ✨ 가드너 추천 씨앗 정화\n타입 불일치와 정의되지 않은 속성 에러를 유기적 방어 아키텍처로 정화했습니다.\n\n#### 🌿 가드너의 조언\n- 예외적인 구조에는 항상 디폴트 객체(Null Object Pattern)나 옵셔널 체이닝을 활용해 아키텍처에 그늘막을 씌워 보호해 주어야 합니다.'
+  }
+];
+
+// Simple intelligent classifier to map errors to categories
+const classifyErrorType = (log: string, frustration: string): 'delay' | 'network' | 'memory' | 'legacy' | 'other' => {
+  const combined = (log + ' ' + frustration).toLowerCase();
+  if (
+    combined.includes('timeout') || 
+    combined.includes('delay') || 
+    combined.includes('slow') || 
+    combined.includes('loading') || 
+    combined.includes('지연') || 
+    combined.includes('느려') || 
+    combined.includes('대기') || 
+    combined.includes('로딩') || 
+    combined.includes('타임아웃')
+  ) {
+    return 'delay';
+  }
+  if (
+    combined.includes('connection') || 
+    combined.includes('network') || 
+    combined.includes('http') || 
+    combined.includes('fetch') || 
+    combined.includes('connect') || 
+    combined.includes('서버') || 
+    combined.includes('네트워크') || 
+    combined.includes('인터넷') || 
+    combined.includes('연결') || 
+    combined.includes('끊')
+  ) {
+    return 'network';
+  }
+  if (
+    combined.includes('memory') || 
+    combined.includes('heap') || 
+    combined.includes('size') || 
+    combined.includes('limit') || 
+    combined.includes('oom') || 
+    combined.includes('용량') || 
+    combined.includes('메모리') || 
+    combined.includes('무거') || 
+    combined.includes('과부하') || 
+    combined.includes('터')
+  ) {
+    return 'memory';
+  }
+  if (
+    combined.includes('legacy') || 
+    combined.includes('spaghetti') || 
+    combined.includes('refactor') || 
+    combined.includes('레거시') || 
+    combined.includes('스파게티') || 
+    combined.includes('꼬인') || 
+    combined.includes('옛날')
+  ) {
+    return 'legacy';
+  }
+  return 'other';
+};
 
 interface ErrorDetoxGardenProps {
   onBack: () => void;
@@ -34,6 +144,23 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [detoxResult, setDetoxResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Local storage synchronized history list
+  const [history, setHistory] = useState<PurifiedError[]>(() => {
+    const saved = localStorage.getItem('error_detox_history');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse error detox history:", e);
+      }
+    }
+    return DEFAULT_HISTORY;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('error_detox_history', JSON.stringify(history));
+  }, [history]);
 
   // Grounding section tabs: 'breath' (default) or 'timer'
   const [groundTab, setGroundTab] = useState<'breath' | 'timer'>('breath');
@@ -138,21 +265,31 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
   };
 
   // Web Audio Synthesizer: Soothing Wind & Ocean Rustle + Procedural Birds
-  const toggleAmbientSound = () => {
+  const isAmbientPlayingRef = useRef(false);
+
+  const toggleAmbientSound = async () => {
     if (isAmbientPlaying) {
+      isAmbientPlayingRef.current = false;
       // Stop audio
       if (oscillatorNodeRef.current) {
         try { oscillatorNodeRef.current.stop(); } catch (e) {}
+        try { oscillatorNodeRef.current.disconnect(); } catch (e) {}
       }
       if (noiseNodeRef.current) {
-        noiseNodeRef.current.disconnect();
+        try { (noiseNodeRef.current as any).stop?.(); } catch (e) {}
+        try { noiseNodeRef.current.disconnect(); } catch (e) {}
+      }
+      if (gainNodeRef.current) {
+        try { gainNodeRef.current.disconnect(); } catch (e) {}
       }
       if (birdTimerRef.current) {
         clearInterval(birdTimerRef.current);
         birdTimerRef.current = null;
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try {
+          await audioContextRef.current.close();
+        } catch (e) {}
       }
       audioContextRef.current = null;
       setIsAmbientPlaying(false);
@@ -161,7 +298,11 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
       try {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
         audioContextRef.current = ctx;
+        isAmbientPlayingRef.current = true;
 
         // Generate Pink Noise (or White Noise with Lowpass Filter to sound like wind/waves)
         const bufferSize = 2 * ctx.sampleRate;
@@ -199,7 +340,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
         // Dynamic Volume control
         const mainGain = ctx.createGain();
         mainGain.gain.setValueAtTime(0.01, ctx.currentTime);
-        mainGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 2.0); // Smooth fade-in
+        mainGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 1.5); // Smooth fade-in
 
         // Connect nodes
         noiseSource.connect(filter);
@@ -216,19 +357,17 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
         gainNodeRef.current = mainGain;
 
         // Start Procedural Bird Chirping Loop
-        // Trigger first bird chirp sequence after 1.2 seconds
         setTimeout(() => {
-          if (audioContextRef.current && audioContextRef.current.state === 'running') {
+          if (isAmbientPlayingRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
             playBirdChirp(ctx, ctx.destination);
           }
         }, 1200);
 
-        // Trigger random chirps every 6 seconds on average
         birdTimerRef.current = setInterval(() => {
-          if (audioContextRef.current && audioContextRef.current.state === 'running') {
-            const extraDelay = Math.random() * 2500; // Random offset to avoid robotic rhythm
+          if (isAmbientPlayingRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
+            const extraDelay = Math.random() * 2500;
             setTimeout(() => {
-              if (audioContextRef.current && audioContextRef.current.state === 'running') {
+              if (isAmbientPlayingRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
                 playBirdChirp(ctx, ctx.destination);
               }
             }, extraDelay);
@@ -370,6 +509,17 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
     // Trigger breathing to guide them while waiting
     startBreathing();
 
+    let finalRemedy = '';
+    const errType = classifyErrorType(errorLog, frustration);
+    const plantMap: Record<string, 'eucalyptus' | 'bamboo' | 'monstera' | 'ivy' | 'recommend'> = {
+      delay: 'eucalyptus',
+      network: 'bamboo',
+      memory: 'monstera',
+      legacy: 'ivy',
+      other: 'recommend'
+    };
+    const plantType = plantMap[errType];
+
     try {
       const response = await fetch('/api/gemini/refresh', {
         method: 'POST',
@@ -379,6 +529,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
 
       const data = await response.json();
       if (response.ok && data.text) {
+        finalRemedy = data.text;
         setDetoxResult(data.text);
       } else {
         throw new Error(data.error || '응답을 받지 못했습니다.');
@@ -389,24 +540,37 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
       setError(err.message || '네트워크 상태나 API 설정을 확인해 주세요.');
       
       // Beautiful local botanical wisdom fallback
-      setDetoxResult(`
-### 🍃 숲길에서 전하는 작은 지혜와 위로
+      finalRemedy = `
+### 🍃 방구석 개발자를 위한 따뜻한 지혜와 위로
 
-잠시 에러 로그에서 고개를 들어 창밖을 보시거나, 깊고 푸른 숲속의 바람을 상상해 보세요. 
-지금 마주하신 에러는 시스템이 더 건강하게 자라기 위해 분갈이를 요청하는 신호와 같습니다.
+잠시 모니터 불빛에서 눈을 떼고 창밖을 보거나 깊게 숨을 내쉬어 보세요. 
+방구석에서 홀로 버그와 외롭게 씨름하고 있지만, 지금 마주한 에러는 여러분의 코드와 실력이 한 단계 더 단단해지기 위한 자연스러운 과정입니다.
 
-#### 🌿 마주하신 에러에 대한 가드너의 조언 (자체 환기 처방)
-1. **과습을 피하듯, 과부하를 줄이세요:**
-   - 만약 타임아웃이나 대기 병목이라면, 데이터 스트림의 흐름(Flow)이 정체된 것일 수 있습니다. CQRS 비동기 구조나 버퍼링을 도입해 식물에게 물을 조금씩 나누어 주듯 트래픽을 분할해 보세요.
-2. **단단한 지지대를 세우세요:**
-   - NullPointer나 예외가 터졌다면, 식물이 쓰러지지 않도록 대를 세우듯 \`Optional\`이나 기본값을 꼼꼼히 배치해 아키텍처에 든든한 뼈대를 얹어줄 때입니다.
-3. **잠시 휴식을 주는 햇살을 쬐어주세요:**
-   - 숲의 생물들은 밤새 조용히 숨 쉬며 성장을 준비합니다. 해결되지 않는 복잡한 아키텍처 난제는 30분간의 정원 산책이나 스트레칭 이후에 거짓말처럼 풀리곤 합니다.
+#### 🌿 지친 개발자를 위한 마음 다독임 & 처방
+1. **과습을 피하듯, 마음의 과부하를 내려놓으세요:**
+   - 붉은 에러 로그가 계속된다면 잠시 마음의 흐름이 막힌 것일 수 있습니다. 머릿속을 스치는 부담감을 잠시 비워두고, 문제를 작게 나누어 하나씩 차근차근 점검해 보세요.
+2. **튼튼한 받침대를 세우듯 기본을 챙기세요:**
+   - Unexpected Null이나 타입 에러가 난다면, 식물이 넘어지지 않도록 대를 세워주듯 옵셔널 체이닝(\`?. \`)이나 기본값(Default Value)을 세심하게 챙겨주세요.
+3. **밤새운 머리에는 짧은 휴식이 최고의 백신입니다:**
+   - 풀리지 않던 난제도 15분의 가벼운 스트레칭이나 물 한 잔을 마시고 돌아오면 거짓말처럼 시원하게 풀리곤 합니다.
 
-> "코드의 덤불 속에서도 싱그러운 새싹은 언제나 돋아납니다. 오늘도 묵묵히 흙을 일구는 당신의 수고에 감사드립니다."
-      `);
+> "모니터 앞에서의 수많은 시행착오는 결코 헛되지 않습니다. 밤새 고군분투하는 여러분의 노력을 진심으로 응원합니다."
+      `;
+      setDetoxResult(finalRemedy);
     } finally {
       setIsGenerating(false);
+
+      // Create and record a new purified log
+      const newPurified: PurifiedError = {
+        id: 'purified-' + Date.now(),
+        timestamp: new Date().toISOString(),
+        errorLog: errorLog || '입력한 에러 로그 없음',
+        frustration: frustration || '입력한 마음 내용 없음',
+        errorType: errType,
+        plantType: plantType,
+        remedy: finalRemedy
+      };
+      setHistory(prev => [newPurified, ...prev]);
     }
   };
 
@@ -432,6 +596,9 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
         </button>
       </div>
 
+      {/* 묘목 성장 시각화 가든 */}
+      <GardenSeedlingVisual purifiedCount={history.length} />
+
       {/* Main Grid: Input and Breathing */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="detox-main-layout">
         
@@ -446,14 +613,14 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
             <div className="space-y-1 relative z-10">
               <div className="inline-flex items-center space-x-1.5 text-emerald-800">
                 <Sprout className="w-4 h-4 text-emerald-600" />
-                <span className="text-3xs font-bold font-mono tracking-wider">마음을 돌보는 에러 처방전</span>
+                <span className="text-3xs font-bold font-mono tracking-wider">방구석 개발자를 위한 맞춤 처방전</span>
               </div>
               <h2 className="text-xl font-bold text-emerald-950 font-display">
-                초록빛 에러 해소 가든 쉼터
+                모니터 앞 지친 마음을 위한 에러 쉼터
               </h2>
               <p className="text-3xs text-emerald-700/80 leading-relaxed font-medium">
-                지긋지긋한 에러 메시지나 나를 괴롭히는 무거운 버그를 아래에 적어주세요. 
-                싱그러운 바람 소리와 함께 마음을 환기하고 자연의 비유와 디버깅 지혜를 담은 따뜻한 처방전을 전해드립니다.
+                밤새 나를 고생시켰던 에러 메시지나 마음속 답답함을 편하게 남겨주세요. 
+                자연의 소리와 함께 지친 마음을 비워내고, 따뜻한 위로와 문제 해결의 힌트가 담긴 처방전을 전해드립니다.
               </p>
             </div>
 
@@ -461,12 +628,12 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
               {/* Error Log textarea */}
               <div className="space-y-1.5">
                 <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                  나를 힘들게 한 에러 메시지나 코드 (에러 코드)
+                  나를 밤새우게 한 에러 메시지나 코드
                 </label>
                 <textarea
                   value={errorLog}
                   onChange={(e) => setErrorLog(e.target.value)}
-                  placeholder="예: NullPointerException, OutOfMemoryError, 혹은 해결되지 않는 통신 타임아웃 로그를 붙여넣어 주세요..."
+                  placeholder="예: NullPointerException, OutOfMemoryError, 혹은 해결되지 않는 통신 타임아웃 로그를 편하게 붙여넣어 주세요..."
                   className="w-full h-32 p-3 text-xs bg-white/70 border border-emerald-100 rounded-xl focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300 transition-all font-mono placeholder:text-emerald-900/30"
                 />
               </div>
@@ -474,13 +641,13 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
               {/* Frustration / Complaint textarea */}
               <div className="space-y-1.5">
                 <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
-                  지금 내 솔직한 기분이나 힘든 점 (마음 일기)
+                  지금 느끼는 답답함이나 솔직한 마음
                 </label>
                 <input
                   type="text"
                   value={frustration}
                   onChange={(e) => setFrustration(e.target.value)}
-                  placeholder="예: 오늘 안에 끝내고 싶은데 3시간째 이 에러로 퇴근이 늦어져 머리가 답답합니다."
+                  placeholder="예: 몇 시간째 붉은 에러 줄과 싸우고 있어서 머리가 지치고 가슴이 답답해요..."
                   className="w-full px-3.5 py-3 text-xs bg-white/70 border border-emerald-100 rounded-xl focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300 transition-all placeholder:text-emerald-900/30 font-medium"
                 />
               </div>
@@ -517,11 +684,11 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
                   {isGenerating ? (
                     <>
                       <Loader className="w-3.5 h-3.5 animate-spin" />
-                      <span>마음과 에러 정화하는 중...</span>
+                      <span>에러를 다독이며 처방전을 만드는 중...</span>
                     </>
                   ) : (
                     <>
-                      <span>에러 정화하고 처방전 받기</span>
+                      <span>에러 털어내고 처방전 받기</span>
                       <Send className="w-3.5 h-3.5" />
                     </>
                   )}
@@ -798,7 +965,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
             <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
               <div className="flex items-center space-x-2.5">
                 <Smile className="w-5 h-5 text-emerald-700" />
-                <h3 className="text-xs font-bold text-emerald-950 font-display">초록빛 가드너의 디톡스 처방전</h3>
+                <h3 className="text-xs font-bold text-emerald-950 font-display">개발자를 위한 마음 처방전</h3>
               </div>
 
               <button
@@ -811,7 +978,7 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
                 className="inline-flex items-center space-x-1 text-3xs text-emerald-800 hover:text-emerald-950 underline font-semibold"
               >
                 <RefreshCw className="w-3 h-3" />
-                <span>새 에러 환기하기</span>
+                <span>새로운 에러 털어내기</span>
               </button>
             </div>
 
@@ -850,6 +1017,12 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Error Detox Statistics & Activity History Dashboard */}
+      <DetoxDashboard 
+        history={history} 
+        onClearHistory={() => setHistory(DEFAULT_HISTORY)} 
+      />
     </div>
   );
 }
