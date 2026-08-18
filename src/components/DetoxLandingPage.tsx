@@ -12,6 +12,7 @@ import {
   Smile,
   BookOpen,
   ArrowRight,
+  Users,
   Maximize2,
   Cloud,
   FileText,
@@ -194,6 +195,18 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
           errorLogTextareaRef.current.focus();
         }
       }, 300);
+    }, 150);
+  };
+
+  // 히어로에서 정원 광장으로 한 번에 이동한다. 탭을 바꾸고 탭 줄까지 스크롤한다.
+  const handleGoToCommunity = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setActiveTab('community');
+    setTimeout(() => {
+      const element = document.getElementById('detox-tabs');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }, 150);
   };
 
@@ -1403,6 +1416,18 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                 <Sprout className="w-4 h-4 text-emerald-400 group-hover:animate-bounce shrink-0" />
                 <span className="relative z-10">에러 털어내고 쉼터로 가기 🪴</span>
                 <ArrowRight className="w-4 h-4 text-emerald-300 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+
+              <motion.button
+                onClick={handleGoToCommunity}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center space-x-2 bg-white text-emerald-900 border border-emerald-200 hover:bg-emerald-50/60 hover:border-emerald-300 px-5 py-3.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shadow-3xs group"
+                id="hero-go-to-community-btn"
+              >
+                <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>🌸 정원 광장 둘러보기</span>
+                <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
               </motion.button>
 
               <button
