@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, increment, query, orderBy } from 'firebase/firestore';
-import RemedyMarkdown from './RemedyMarkdown';
+import RemedyMarkdown, { countRemedyBlocks } from './RemedyMarkdown';
 
 interface SharedPost {
   id: string;
@@ -403,7 +403,6 @@ export default function CommunitySquare({
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4 }}
                     className={`relative p-5 pt-7 border border-neutral-300/40 hover:border-emerald-300 hover:shadow-md hover:scale-[1.01] hover:rotate-0 transition-all duration-300 rounded-[4px] ${rotation} ${bgStyle} flex flex-col justify-between`}
-                    style={{ fontFamily: '"Inter", sans-serif' }}
                   >
                     {/* Retro Pushpin Pin Effect */}
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#B53E3E] rounded-full shadow-sm z-20 border border-[#9E2E2E]">
@@ -490,10 +489,11 @@ export default function CommunitySquare({
                           <span>BOTANICAL PURIFICATION REMEDY</span>
                         </span>
 
-                        <div className="text-[9.5px] text-neutral-800 leading-relaxed font-semibold space-y-1.5">
-                          <RemedyMarkdown text={post.remedy.split('\n').slice(0, 5).join('\n')} variant="compact" />
-                          {post.remedy.split('\n').length > 5 && (
-                            <span className="text-[8.5px] text-emerald-800/60 block font-bold mt-1">
+                        <div className="space-y-1.5">
+                          {/* 줄이 아니라 블록 단위로 잘라야 코드 펜스 한가운데가 끊기지 않는다. */}
+                          <RemedyMarkdown text={post.remedy} variant="compact" maxBlocks={2} />
+                          {countRemedyBlocks(post.remedy) > 2 && (
+                            <span className="text-[10px] text-emerald-800/60 block font-bold mt-1">
                               ...더 많은 처방 내역 포함됨
                             </span>
                           )}

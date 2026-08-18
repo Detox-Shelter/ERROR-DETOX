@@ -2022,7 +2022,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     
                     {/* Left 8 cols: Prescribed Wisdom */}
                     <div className="lg:col-span-8 space-y-6">
-                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-emerald-50/60 shadow-3xs text-xs text-emerald-950/80 leading-relaxed font-serif">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-emerald-50/60 shadow-2xs">
                         <RemedyMarkdown text={prescription} />
                       </div>
                     </div>
@@ -2433,8 +2433,9 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                       </div>
 
                       {/* Snippet of the generated advice */}
-                      <div className="bg-[#FCFBF8] p-3 rounded-xl text-3xs text-emerald-800/80 leading-relaxed font-medium line-clamp-4 overflow-hidden border border-emerald-50/50">
-                        {log.prescription.replace(/[#*>]/g, '').slice(0, 200)}...
+                      {/* 요약 인용 카드까지만 보여준다. 평문으로 뭉개면 구조가 사라진다. */}
+                      <div className="bg-[#FCFBF8] p-3 rounded-xl max-h-40 overflow-hidden border border-emerald-50/50">
+                        <RemedyMarkdown text={log.prescription} variant="compact" maxBlocks={2} />
                       </div>
                     </div>
 
