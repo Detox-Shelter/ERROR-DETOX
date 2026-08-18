@@ -1,11 +1,9 @@
 {
-  "projectId": "tera-winter-d4dh4",
-  "appId": "1:1024902272415:web:cd8386cc8ac37ddf26d9aa",
-  "apiKey": "AIzaSyCzE5uBVBPMUVp0W39Yx9FwfON44ji-eQw",
-  "authDomain": "tera-winter-d4dh4.firebaseapp.com",
-  "storageBucket": "tera-winter-d4dh4.firebasestorage.app",
-  "messagingSenderId": "1024902272415",
-  "measurementId": "",
-  "oAuthClientId": "1024902272415-3cfuqv7dkgtulp6lcab64tgo4rfl7aac.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "error-detox",
+  "appId": "1:20877836753:web:e09c92e6dfd531a4aa60f0",
+  "apiKey": "AIzaSyBAYh-f6RMliH8GeYbNP2Zokj6V54T0Ua0",
+  "authDomain": "error-detox.firebaseapp.com",
+  "storageBucket": "error-detox.firebasestorage.app",
+  "messagingSenderId": "20877836753",
+  "measurementId": "G-QL0MHWKLC9"
 }
