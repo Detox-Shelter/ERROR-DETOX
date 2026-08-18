@@ -32,6 +32,7 @@ import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import GuideModal from './GuideModal';
 import CommunitySquare from './CommunitySquare';
+import RemedyMarkdown from './RemedyMarkdown';
 
 // Import our beautiful generated botanical images
 import leafDecor from '../assets/images/botanical_leaf_decor_1784084589115.jpg';
@@ -1996,46 +1997,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     
                     {/* Left 8 cols: Prescribed Wisdom */}
                     <div className="lg:col-span-8 space-y-6">
-                      <div className="bg-white p-6 rounded-2xl border border-emerald-50/60 shadow-3xs prose prose-emerald text-xs text-emerald-950/80 leading-relaxed font-serif space-y-4">
-                        {prescription.split('\n').map((line, index) => {
-                          const trimmed = line.trim();
-                          if (trimmed.startsWith('###')) {
-                            return (
-                              <h4 key={index} className="text-xs font-bold text-emerald-950 border-l-2 border-emerald-500 pl-2.5 mt-5">
-                                {trimmed.replace('###', '').trim()}
-                              </h4>
-                            );
-                          }
-                          if (trimmed.startsWith('####')) {
-                            return (
-                              <h5 key={index} className="text-[11px] font-bold text-emerald-900 mt-4">
-                                {trimmed.replace('####', '').trim()}
-                              </h5>
-                            );
-                          }
-                          if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                            return (
-                              <li key={index} className="ml-4 list-disc my-1">
-                                {trimmed.substring(1).trim()}
-                              </li>
-                            );
-                          }
-                          if (trimmed.startsWith('>') || trimmed.startsWith('\"')) {
-                            return (
-                              <blockquote key={index} className="italic text-emerald-800 pl-4 border-l-4 border-emerald-200 py-1.5 my-3 bg-emerald-50/40 rounded-r-xl">
-                                {trimmed.replace(/[>"\\]/g, '').trim()}
-                              </blockquote>
-                            );
-                          }
-                          if (trimmed.startsWith('1.') || trimmed.startsWith('2.') || trimmed.startsWith('3.')) {
-                            return (
-                              <p key={index} className="font-semibold text-emerald-950 mt-2">
-                                {trimmed}
-                              </p>
-                            );
-                          }
-                          return trimmed ? <p key={index}>{trimmed}</p> : <div key={index} className="h-1" />;
-                        })}
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-emerald-50/60 shadow-3xs text-xs text-emerald-950/80 leading-relaxed font-serif">
+                        <RemedyMarkdown text={prescription} />
                       </div>
                     </div>
 

@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import RemedyMarkdown from './RemedyMarkdown';
 
 interface DetoxDashboardProps {
   history: PurifiedError[];
@@ -497,22 +498,7 @@ export default function DetoxDashboard({ history, onClearHistory }: DetoxDashboa
                           </span>
                           
                           <div className="space-y-2 mt-1.5 text-[10px] leading-relaxed text-emerald-900/90">
-                            {log.remedy.split('\n').map((line, idx) => {
-                              const trimmed = line.trim();
-                              if (trimmed.startsWith('###')) {
-                                return <h5 key={idx} className="font-bold text-emerald-950 mt-2 text-[10px] border-l-2 border-emerald-500 pl-1">{trimmed.replace('###', '')}</h5>;
-                              }
-                              if (trimmed.startsWith('####')) {
-                                return <h6 key={idx} className="font-bold text-emerald-900 mt-1.5 text-[9px]">{trimmed.replace('####', '')}</h6>;
-                              }
-                              if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                                return <li key={idx} className="ml-3 list-disc my-0.5">{trimmed.substring(1).trim()}</li>;
-                              }
-                              if (trimmed.startsWith('>') || trimmed.startsWith('\"')) {
-                                return <blockquote key={idx} className="italic text-emerald-800 pl-3 border-l-2 border-emerald-200 py-0.5 my-1 bg-emerald-50/20">{trimmed.replace(/[>"\\]/g, '')}</blockquote>;
-                              }
-                              return trimmed ? <p key={idx}>{trimmed}</p> : <div key={idx} className="h-1" />;
-                            })}
+                            <RemedyMarkdown text={log.remedy} variant="compact" />
                           </div>
                         </div>
 

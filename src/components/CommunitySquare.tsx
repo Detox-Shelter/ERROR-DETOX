@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, increment, query, orderBy } from 'firebase/firestore';
+import RemedyMarkdown from './RemedyMarkdown';
 
 interface SharedPost {
   id: string;
@@ -490,22 +491,7 @@ export default function CommunitySquare({
                         </span>
 
                         <div className="text-[9.5px] text-neutral-800 leading-relaxed font-semibold space-y-1.5">
-                          {post.remedy.split('\n').slice(0, 5).map((line, idx) => {
-                            const trimmed = line.trim();
-                            if (trimmed.startsWith('###')) {
-                              return <h5 key={idx} className="font-extrabold text-emerald-900 text-[10px] mt-1">{trimmed.replace('###', '')}</h5>;
-                            }
-                            if (trimmed.startsWith('####')) {
-                              return <h6 key={idx} className="font-bold text-emerald-800 text-[9px]">{trimmed.replace('####', '')}</h6>;
-                            }
-                            if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                              return <li key={idx} className="ml-2.5 list-disc">{trimmed.substring(1).trim()}</li>;
-                            }
-                            if (trimmed.startsWith('>') || trimmed.startsWith('\"')) {
-                              return <blockquote key={idx} className="italic text-emerald-700 pl-2 border-l-2 border-emerald-200 py-0.5 my-1">{trimmed.replace(/[>"\\]/g, '')}</blockquote>;
-                            }
-                            return trimmed ? <p key={idx}>{trimmed}</p> : null;
-                          })}
+                          <RemedyMarkdown text={post.remedy.split('\n').slice(0, 5).join('\n')} variant="compact" />
                           {post.remedy.split('\n').length > 5 && (
                             <span className="text-[8.5px] text-emerald-800/60 block font-bold mt-1">
                               ...더 많은 처방 내역 포함됨
