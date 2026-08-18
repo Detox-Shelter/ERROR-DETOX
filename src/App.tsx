@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
-import { initAuth, googleSignIn, logout } from './firebase';
+import { initAuth, googleSignIn, logout, completeRedirectSignIn, describeAuthError } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -8,12 +8,13 @@ import { db } from './firebase';
 import DetoxLandingPage from './components/DetoxLandingPage';
 import AvatarModal from './components/AvatarModal';
 import GuideModal from './components/GuideModal';
-import { Sprout, LogOut, Cloud, HelpCircle, Heart, Edit, Check, X, Camera, Sun, Moon, BookOpen } from 'lucide-react';
+import { Sprout, LogOut, Cloud, HelpCircle, Heart, Edit, Check, X, Camera, Sun, Moon, BookOpen, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [authError, setAuthError] = useState<string>('');
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Custom User Profile states
@@ -59,6 +60,24 @@ export default function App() {
       }
     );
     return () => unsubscribe();
+  }, []);
+
+  // 팝업이 막혀 리디렉션으로 로그인한 경우, 돌아온 뒤 결과를 받아 처리한다.
+  useEffect(() => {
+    completeRedirectSignIn()
+      .then((outcome) => {
+        if (outcome.status === 'signed-in') {
+          setUser(outcome.user);
+          setNeedsAuth(false);
+          setAuthError('');
+        } else if (outcome.status === 'aborted') {
+          setAuthError('로그인 절차가 끝나기 전에 되돌아왔습니다. Google 계정 선택을 완료해 주세요.');
+        }
+      })
+      .catch((err) => {
+        console.error('Redirect login failed:', err);
+        setAuthError(describeAuthError(err));
+      });
   }, []);
 
   // Sync custom user profile on login or auth change
@@ -164,6 +183,7 @@ export default function App() {
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setAuthError('');
     try {
       const result = await googleSignIn();
       if (result) {
@@ -172,6 +192,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Google login failed:', err);
+      setAuthError(describeAuthError(err));
     } finally {
       setIsLoggingIn(false);
     }
@@ -183,6 +204,7 @@ export default function App() {
       await logout();
       setUser(null);
       setNeedsAuth(true);
+      setAuthError('');
     } catch (err) {
       console.error('Logout failed:', err);
     }
@@ -445,6 +467,25 @@ export default function App() {
 
         </div>
       </header>
+
+      {/* Drive 연결 실패 안내 : 원인을 화면에서 바로 확인할 수 있게 노출한다 */}
+      {authError && (
+        <div className="bg-amber-50 border-b border-amber-200" id="auth-error-banner" role="alert">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="flex-1 text-[11px] leading-relaxed text-amber-900 font-medium break-words">
+              {authError}
+            </p>
+            <button
+              onClick={() => setAuthError('')}
+              className="p-1 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer shrink-0"
+              title="안내 닫기"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Landing Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8" id="main-content">
