@@ -36,6 +36,29 @@
   font-size: 0.55rem;
 }
 
+/* Tailwind v4에 없는 눈금들. 앞의 text-*xs 와 같은 방식으로 직접 정의한다.
+   정의가 없으면 클래스가 조용히 무시돼 주간에는 그림자가 아예 안 보이고,
+   야간 테마 규칙에만 걸려서 밤에만 그림자가 생기는 어긋남이 생긴다. */
+.shadow-3xs {
+  box-shadow: 0 1px 2px rgb(6 78 59 / 0.04);
+}
+.shadow-4xs {
+  box-shadow: 0 1px 1px rgb(6 78 59 / 0.03);
+}
+.backdrop-blur-3xs {
+  --tw-backdrop-blur: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* emerald 150과 850. 기본 팔레트에 없는 중간 눈금이라 같이 채워 둔다. */
+.border-emerald-150 {
+  border-color: #bcf3da;
+}
+.text-emerald-850 {
+  color: #065741;
+}
+
 /* ==========================================================================
    Night Garden (Nocturnal dark mode) Style Overrides
    ========================================================================== */

@@ -1641,7 +1641,9 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
       </div>
 
       {/* Tab Contents */}
-      <AnimatePresence mode="wait">
+      {/* mode="wait" 를 쓰면 안 된다. 자식이 조건부 네 슬롯으로 들어와서 나가는 탭의 exit 가
+          해소되지 않고, 다음 탭이 영영 mount 되지 않는다. */}
+      <AnimatePresence>
         
         {/* TAB 1: Garden and Error Compost Playground */}
         {activeTab === 'garden' && (

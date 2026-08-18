@@ -45,6 +45,36 @@ const safeHref = (url: string): string | null => {
 const LINK_CLASS =
   'text-emerald-700 underline underline-offset-2 decoration-emerald-300 hover:decoration-emerald-600 break-words';
 
+// 모델이 &nbsp; 같은 엔티티를 섞어 보낸다. 평문 조각에만 풀어 주고 코드 스팬은 건드리지 않는다.
+// 한 번만 치환하므로 &amp;nbsp; 는 &nbsp; 라는 글자로 남는다.
+const ENTITIES: Record<string, string> = {
+  nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  hellip: '…', mdash: '—', ndash: '–', middot: '·', times: '×', deg: '°',
+  rarr: '→', larr: '←', copy: '©', reg: '®', trade: '™',
+  laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’'
+};
+
+const ENTITY_RE = /&(#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z]{2,8});/g;
+
+const decodeEntities = (text: string): string => {
+  if (!text.includes('&')) return text;
+  return text.replace(ENTITY_RE, (whole, name: string) => {
+    if (name.startsWith('#')) {
+      const code = name[1] === 'x' || name[1] === 'X'
+        ? parseInt(name.slice(2), 16)
+        : parseInt(name.slice(1), 10);
+      // 범위를 벗어난 코드포인트는 원문 그대로 둔다.
+      if (!Number.isFinite(code) || code < 0x20 || code > 0x10ffff) return whole;
+      try {
+        return String.fromCodePoint(code);
+      } catch {
+        return whole;
+      }
+    }
+    return ENTITIES[name.toLowerCase()] ?? whole;
+  });
+};
+
 const CODE_CHIP_CLASS =
   'font-mono text-[0.9em] bg-emerald-50 text-emerald-900 border border-emerald-100 rounded px-1 py-0.5 break-words';
 
@@ -111,7 +141,7 @@ const renderInline = (text: string, keyPrefix: string, depth = 0): React.ReactNo
     }
 
     if (m.index > cursor) {
-      nodes.push(<React.Fragment key={`${keyPrefix}-t${n++}`}>{text.slice(cursor, m.index)}</React.Fragment>);
+      nodes.push(<React.Fragment key={`${keyPrefix}-t${n++}`}>{decodeEntities(text.slice(cursor, m.index))}</React.Fragment>);
     }
     cursor = m.index + m[0].length;
     const key = `${keyPrefix}-i${n++}`;
@@ -165,7 +195,7 @@ const renderInline = (text: string, keyPrefix: string, depth = 0): React.ReactNo
   }
 
   if (cursor < text.length) {
-    nodes.push(<React.Fragment key={`${keyPrefix}-t${n++}`}>{text.slice(cursor)}</React.Fragment>);
+    nodes.push(<React.Fragment key={`${keyPrefix}-t${n++}`}>{decodeEntities(text.slice(cursor))}</React.Fragment>);
   }
   return nodes;
 };
