@@ -21,7 +21,11 @@ const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.file');
 
 const TOKEN_STORAGE_KEY = 'detox-drive-access-token';
+const TOKEN_ISSUED_KEY = 'detox-drive-token-issued-at';
 const REDIRECT_PENDING_KEY = 'detox-drive-redirect-pending';
+
+// Google 액세스 토큰은 약 1시간 뒤 만료된다. 경계에서 실패하지 않도록 55분으로 잡는다.
+const TOKEN_MAX_AGE_MS = 55 * 60 * 1000;
 
 // 팝업 자체가 뜨지 않거나 인증을 끝내기 전에 닫히는 브라우저(서드파티 쿠키 차단,
 // 저장소 파티셔닝, 팝업 차단기)에서는 리디렉션 방식으로 우회한다.
@@ -58,7 +62,6 @@ const removeSession = (key: string) => {
   }
 };
 
-let isSigningIn = readSession(REDIRECT_PENDING_KEY) === '1';
 let cachedAccessToken: string | null = readSession(TOKEN_STORAGE_KEY);
 
 export interface SignInResult {
@@ -69,13 +72,12 @@ export interface SignInResult {
 const storeCredential = (result: UserCredential): SignInResult => {
   const credential = GoogleAuthProvider.credentialFromResult(result);
   if (!credential?.accessToken) {
-    isSigningIn = false;
     throw new Error('Google Auth에서 Access Token을 획득하는 데 실패했습니다.');
   }
 
   cachedAccessToken = credential.accessToken;
   writeSession(TOKEN_STORAGE_KEY, cachedAccessToken);
-  isSigningIn = false;
+  writeSession(TOKEN_ISSUED_KEY, String(Date.now()));
   return { user: result.user, accessToken: cachedAccessToken };
 };
 
@@ -103,24 +105,37 @@ export const describeAuthError = (error: unknown): string => {
   return code ? `Google Drive 연결에 실패했습니다. (${code}) ${raw}` : `Google Drive 연결에 실패했습니다. ${raw}`;
 };
 
+// 저장된 Drive 토큰이 아직 유효한지 확인한다. 만료됐으면 지운다.
+const readValidToken = (): string | null => {
+  if (!cachedAccessToken) return null;
+  const issuedAt = Number(readSession(TOKEN_ISSUED_KEY) || 0);
+  if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
+    cachedAccessToken = null;
+    removeSession(TOKEN_STORAGE_KEY);
+    removeSession(TOKEN_ISSUED_KEY);
+    return null;
+  }
+  return cachedAccessToken;
+};
+
+// Drive 토큰이 살아 있는지 알려준다. 로그인 여부와는 별개다.
+export const hasDriveAccess = (): boolean => readValidToken() !== null;
+
 // Initialize auth state listener
 export const initAuth = (
-  onAuthSuccess?: (user: User, token: string) => void,
+  onAuthSuccess?: (user: User, token: string | null) => void,
   onAuthFailure?: () => void
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        // 세션은 살아 있지만 Drive 토큰이 없는 상태(탭을 새로 열었거나 저장소가 비워진 경우).
-        // 토큰 없이는 Drive 호출이 불가하므로 다시 로그인하도록 실패로 알린다.
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
-      }
+      // 로그인 여부는 Firebase 세션으로만 판단한다. Firebase가 세션을 localStorage에 보관하므로
+      // 새로고침이나 브라우저 재시작에도 유지된다. Drive 토큰은 탭 단위라 없을 수 있고,
+      // 없다고 해서 로그아웃 상태로 되돌리지 않는다.
+      if (onAuthSuccess) onAuthSuccess(user, readValidToken());
     } else {
       cachedAccessToken = null;
       removeSession(TOKEN_STORAGE_KEY);
+      removeSession(TOKEN_ISSUED_KEY);
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -128,14 +143,12 @@ export const initAuth = (
 
 // Must be called from a button click or user interaction
 export const googleSignIn = async (): Promise<SignInResult | null> => {
-  isSigningIn = true;
   try {
     const result = await signInWithPopup(auth, provider);
     return storeCredential(result);
   } catch (popupError: any) {
     const code = popupError?.code ?? '';
     if (!POPUP_FALLBACK_CODES.has(code)) {
-      isSigningIn = false;
       console.error('Sign in error:', popupError);
       throw popupError;
     }
@@ -148,7 +161,6 @@ export const googleSignIn = async (): Promise<SignInResult | null> => {
       return null;
     } catch (redirectError) {
       removeSession(REDIRECT_PENDING_KEY);
-      isSigningIn = false;
       console.error('Redirect sign in error:', redirectError);
       throw redirectError;
     }
@@ -172,17 +184,17 @@ export const completeRedirectSignIn = async (): Promise<RedirectOutcome> => {
     return wasPending ? { status: 'aborted' } : { status: 'none' };
   } finally {
     removeSession(REDIRECT_PENDING_KEY);
-    isSigningIn = false;
   }
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
+  return readValidToken();
 };
 
 export const logout = async () => {
   await auth.signOut();
   cachedAccessToken = null;
   removeSession(TOKEN_STORAGE_KEY);
+  removeSession(TOKEN_ISSUED_KEY);
   removeSession(REDIRECT_PENDING_KEY);
 };
