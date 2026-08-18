@@ -527,6 +527,15 @@ export default function ErrorDetoxGarden({ onBack }: ErrorDetoxGardenProps) {
         body: JSON.stringify({ errorLog, frustration }),
       });
 
+      // 서버리스 함수가 없으면 404 텍스트가 돌아와 JSON 파싱이 깨진다. 원인을 그대로 드러낸다.
+      if (!(response.headers.get('content-type') || '').includes('application/json')) {
+        throw new Error(
+          response.status === 404
+            ? '처방 서버(/api/gemini/refresh)를 찾지 못했습니다. 배포 설정을 확인해 주세요.'
+            : `처방 서버 응답을 읽지 못했습니다. (HTTP ${response.status})`
+        );
+      }
+
       const data = await response.json();
       if (response.ok && data.text) {
         finalRemedy = data.text;
