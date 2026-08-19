@@ -176,8 +176,9 @@
 }
 
 /* Community square styling adjustments */
-.theme-night .bg-\[\#FAF6EE\],
-.theme-night .bg-[#FAF6EE] {
+/* 이스케이프하지 않은 .bg-[#FAF6EE] 를 같이 두면 안 된다. 선택자 목록에 무효한
+   항목이 하나라도 있으면 CSS 규칙 전체가 버려져 이 야간 오버라이드가 죽는다. */
+.theme-night .bg-\[\#FAF6EE\] {
   background-color: #07120E !important;
   border-color: #0D221C !important;
 }
