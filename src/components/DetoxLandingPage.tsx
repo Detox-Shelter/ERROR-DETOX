@@ -1977,7 +1977,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 12 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="bg-[#FCFBF7] border border-emerald-150/60 rounded-3xl p-6 sm:p-10 shadow-sm space-y-8"
+                  className="bg-[#FCFBF7] border border-emerald-150 rounded-3xl p-6 sm:p-10 shadow-sm space-y-8"
                   id="bloom-panel"
                 >
                   
@@ -2132,7 +2132,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                         >
                           {isSharingToCommunity ? (
                             <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin animate-infinite" />
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>정원 광장에 심는 중... 🌸</span>
                             </>
                           ) : isSharedToCommunity ? (

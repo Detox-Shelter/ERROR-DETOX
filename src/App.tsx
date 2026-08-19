@@ -288,7 +288,7 @@ export default function App() {
             {user ? (
               <div className="flex items-center space-x-3 relative" id="user-profile">
                 {isEditingProfile ? (
-                  <div className="flex items-center space-x-2 bg-white border border-emerald-200/80 p-2 rounded-2xl shadow-sm z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center space-x-2 bg-white border border-emerald-200/80 p-2 rounded-2xl shadow-sm z-50 animate-fade-in">
                     <div className="flex flex-col space-y-1">
                       <input
                         type="text"
