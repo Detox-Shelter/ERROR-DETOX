@@ -230,19 +230,19 @@ export default function CommunitySquare({
 
         <div className="max-w-3xl space-y-4 relative z-10">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center space-x-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase backdrop-blur-3xs">
+            <div className="inline-flex items-center space-x-1.5 bg-white/10 px-3 py-1 rounded-full text-3xs font-bold tracking-wider uppercase backdrop-blur-3xs">
               <Users className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
               <span>Community Purification Square</span>
             </div>
             
             {/* Real-time DB Status Badge */}
             {isFirestoreActive ? (
-              <span className="inline-flex items-center space-x-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold shadow-sm animate-pulse">
+              <span className="inline-flex items-center space-x-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-4xs font-extrabold shadow-sm animate-pulse">
                 <Globe className="w-2.5 h-2.5 text-emerald-400" />
                 <span>Firestore Cloud Sync Active 🟢</span>
               </span>
             ) : (
-              <span className="inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold">
+              <span className="inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-4xs font-extrabold">
                 <Zap className="w-2.5 h-2.5 text-amber-400 animate-bounce" />
                 <span>Secure Local Server Active 🟡</span>
               </span>
@@ -352,7 +352,7 @@ export default function CommunitySquare({
       <div className="bg-[#FAF6EE] border-8 border-[#8D7660] rounded-[32px] p-6 sm:p-8 shadow-[inset_0_4px_12px_rgba(0,0,0,0.15),0_10px_25px_-5px_rgba(109,79,48,0.25)] relative overflow-hidden">
         {/* Corkboard texture accents */}
         <div className="absolute inset-0 bg-radial from-[#F1E4CE] to-[#E2D2B5] opacity-20 pointer-events-none" />
-        <div className="absolute top-3 left-6 text-[10px] text-[#8D7660] font-extrabold tracking-widest uppercase flex items-center space-x-1.5">
+        <div className="absolute top-3 left-6 text-3xs text-[#8D7660] font-extrabold tracking-widest uppercase flex items-center space-x-1.5">
           <Pin className="w-3.5 h-3.5 rotate-45 text-[#9E3E3E]" />
           <span>COMMUNAL GARDEN BULLETIN BOARD</span>
         </div>
@@ -423,7 +423,7 @@ export default function CommunitySquare({
                           <div className="space-y-0.5 min-w-0">
                             <div className="flex items-center space-x-1 flex-wrap gap-y-0.5">
                               <span className="font-extrabold text-emerald-950 text-2xs truncate max-w-[80px]">{post.nickname}</span>
-                              <span className="text-[7px] font-bold text-emerald-800 font-mono tracking-wide bg-emerald-500/10 px-1 py-0.25 rounded-sm whitespace-nowrap">
+                              <span className="text-4xs font-bold text-emerald-800 font-mono tracking-wide bg-emerald-500/10 px-1 py-0.25 rounded-sm whitespace-nowrap">
                                 {post.gardenerTitle || '초보 가드너 🌱'}
                               </span>
                             </div>
@@ -435,10 +435,10 @@ export default function CommunitySquare({
                         </div>
 
                         <div className="text-right flex flex-col items-end space-y-1">
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold font-mono text-white ${meta.bgClass} shadow-3xs`}>
+                          <span className={`px-1.5 py-0.5 rounded text-4xs font-extrabold font-mono text-white ${meta.bgClass} shadow-3xs`}>
                             {meta.label}
                           </span>
-                          <span className="text-[9px] font-bold text-emerald-900 bg-emerald-500/10 border border-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                          <span className="text-4xs font-bold text-emerald-900 bg-emerald-500/10 border border-emerald-500/10 px-1.5 py-0.5 rounded-full">
                             {meta.plant}
                           </span>
                         </div>
@@ -459,7 +459,7 @@ export default function CommunitySquare({
                           <button
                             type="button"
                             onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
-                            className="flex items-center space-x-1 py-1 text-[9px] font-bold text-neutral-600 hover:text-emerald-900 cursor-pointer"
+                            className="flex items-center space-x-1 py-1 text-4xs font-bold text-neutral-600 hover:text-emerald-900 cursor-pointer"
                           >
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             <span>마주했던 시스템 에러 로그 {isExpanded ? '닫기' : '자세히 보기'}</span>
@@ -473,7 +473,7 @@ export default function CommunitySquare({
                                 exit={{ height: 0, opacity: 0 }}
                                 className="overflow-hidden"
                               >
-                                <pre className="p-3 bg-neutral-900/5 border border-neutral-400/20 rounded-lg text-[9px] font-mono text-neutral-800 whitespace-pre-wrap max-h-32 overflow-y-auto mt-1 leading-normal shadow-3xs">
+                                <pre className="p-3 bg-neutral-900/5 border border-neutral-400/20 rounded-lg text-4xs font-mono text-neutral-800 whitespace-pre-wrap max-h-32 overflow-y-auto mt-1 leading-normal shadow-3xs">
                                   {post.errorLog}
                                 </pre>
                               </motion.div>
@@ -484,7 +484,7 @@ export default function CommunitySquare({
 
                       {/* Purification Botanical Prescription Block */}
                       <div className="p-3.5 bg-white/70 border border-amber-900/10 rounded-xl relative space-y-2 shadow-4xs">
-                        <span className="text-[8.5px] font-mono font-extrabold text-emerald-900 flex items-center gap-1">
+                        <span className="text-4xs font-mono font-extrabold text-emerald-900 flex items-center gap-1">
                           <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
                           <span>BOTANICAL PURIFICATION REMEDY</span>
                         </span>
@@ -493,7 +493,7 @@ export default function CommunitySquare({
                           {/* 줄이 아니라 블록 단위로 잘라야 코드 펜스 한가운데가 끊기지 않는다. */}
                           <RemedyMarkdown text={post.remedy} variant="compact" maxBlocks={2} />
                           {countRemedyBlocks(post.remedy) > 2 && (
-                            <span className="text-[10px] text-emerald-800/60 block font-bold mt-1">
+                            <span className="text-3xs text-emerald-800/60 block font-bold mt-1">
                               ...더 많은 처방 내역 포함됨
                             </span>
                           )}
@@ -511,7 +511,7 @@ export default function CommunitySquare({
                             initial={{ opacity: 0, y: -5, scale: 0.5 }}
                             animate={{ opacity: 0.9, y: -38, scale: 1.25 }}
                             exit={{ opacity: 0 }}
-                            className="absolute bottom-11 right-4 bg-emerald-800 text-white text-[8.5px] font-extrabold px-2.5 py-1 rounded-full shadow-md pointer-events-none flex items-center space-x-1"
+                            className="absolute bottom-11 right-4 bg-emerald-800 text-white text-4xs font-extrabold px-2.5 py-1 rounded-full shadow-md pointer-events-none flex items-center space-x-1"
                           >
                             <Droplets className="w-3 h-3 text-sky-200" />
                             <span>촉촉한 치유 🚿 +1</span>
@@ -519,7 +519,7 @@ export default function CommunitySquare({
                         )}
                       </AnimatePresence>
 
-                      <span className="text-[9px] text-[#8D7660] font-bold flex items-center gap-1">
+                      <span className="text-4xs text-[#8D7660] font-bold flex items-center gap-1">
                         <Bookmark className="w-3 h-3 text-[#8D7660]" />
                         <span>가든 치유 지혜</span>
                       </span>

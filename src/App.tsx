@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Subcomponents
+import GardenDialog, { useGardenDialog } from './components/GardenDialog';
 import DetoxLandingPage from './components/DetoxLandingPage';
 import AvatarModal from './components/AvatarModal';
 import GuideModal from './components/GuideModal';
@@ -26,6 +27,7 @@ export default function App() {
   const [editNameInput, setEditNameInput] = useState('');
   const [editTitleInput, setEditTitleInput] = useState('초보 가드너 🌱');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const dialog = useGardenDialog();
   const [joinDate, setJoinDate] = useState<string>('');
 
   // Simple Theme Toggle: 'day' (Daytime Garden) or 'night' (Night Garden)
@@ -175,7 +177,7 @@ export default function App() {
       setIsEditingProfile(false);
     } catch (err) {
       console.error('Error saving user profile:', err);
-      alert('프로필 저장에 실패했습니다. 다시 시도해 주세요.');
+      dialog.notify('프로필을 저장하지 못했습니다', '잠시 후 다시 시도해 주세요.');
     } finally {
       setIsSavingProfile(false);
     }
@@ -198,8 +200,17 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    if (!window.confirm('정원 쉼터에서 로그아웃 하시겠습니까?')) return;
+  const handleLogout = () => {
+    dialog.confirm({
+      title: '쉼터에서 나갈까요?',
+      message: '로그아웃해도 보관함의 처방전은 그대로 남습니다.',
+      confirmLabel: '로그아웃',
+      cancelLabel: '더 머물기',
+      onConfirm: () => { void performLogout(); },
+    });
+  };
+
+  const performLogout = async () => {
     try {
       await logout();
       setUser(null);
@@ -236,11 +247,11 @@ export default function App() {
               G
             </div>
             <div>
-              <h1 className="text-xs font-bold text-emerald-950 tracking-tight font-display flex items-center space-x-1">
+              <p className="text-xs font-bold text-emerald-950 tracking-tight font-display flex items-center space-x-1">
                 <span>개발자 마음 쉼터 : 에러 정원</span>
                 <Sprout className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              </h1>
-              <p className="text-[9px] text-emerald-700/80 font-semibold font-mono uppercase tracking-wider">방구석 개발자를 위한 마음 쉼터</p>
+              </p>
+              <p className="text-4xs text-emerald-700/80 font-semibold font-mono uppercase tracking-wider">방구석 개발자를 위한 마음 쉼터</p>
             </div>
           </div>
 
@@ -255,11 +266,11 @@ export default function App() {
             {/* Newbie Guide Shortcut Button */}
             <button
               onClick={() => setIsGuideOpen(true)}
-              className="p-1.5 rounded-xl text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50/50 border border-emerald-100/30 transition-all cursor-pointer flex items-center justify-center shadow-3xs"
+              className="p-2.5 rounded-xl text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50/50 border border-emerald-100/30 transition-all cursor-pointer flex items-center justify-center shadow-3xs"
               title="초보 가드너 가이드 보기"
               id="newbie-guide-header-btn"
             >
-              <div className="flex items-center space-x-1.5 text-[10px] font-extrabold text-emerald-850">
+              <div className="flex items-center space-x-1.5 text-3xs font-extrabold text-emerald-850">
                 <BookOpen className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
                 <span className="hidden xs:inline">🌱 초보 가이드</span>
               </div>
@@ -268,17 +279,17 @@ export default function App() {
             {/* Daytime / Night Garden Theme Toggle */}
             <button
               onClick={() => setTheme(theme === 'day' ? 'night' : 'day')}
-              className="p-1.5 rounded-xl text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50/50 border border-emerald-100/30 transition-all cursor-pointer flex items-center justify-center shadow-3xs"
+              className="p-2.5 rounded-xl text-emerald-800 hover:text-emerald-950 hover:bg-emerald-50/50 border border-emerald-100/30 transition-all cursor-pointer flex items-center justify-center shadow-3xs"
               title={theme === 'day' ? '밤의 정원 보기 (다크 모드)' : '낮의 정원 보기 (라이트 모드)'}
               id="theme-toggle-btn"
             >
               {theme === 'day' ? (
-                <div className="flex items-center space-x-1.5 text-[10px] font-bold text-emerald-800">
+                <div className="flex items-center space-x-1.5 text-3xs font-bold text-emerald-800">
                   <Moon className="w-3.5 h-3.5 text-emerald-700" />
                   <span className="hidden sm:inline">밤 정원</span>
                 </div>
               ) : (
-                <div className="flex items-center space-x-1.5 text-[10px] font-bold text-amber-700">
+                <div className="flex items-center space-x-1.5 text-3xs font-bold text-amber-700">
                   <Sun className="w-3.5 h-3.5 text-amber-500 animate-[spin_12s_linear_infinite]" />
                   <span className="hidden sm:inline">낮 정원</span>
                 </div>
@@ -295,14 +306,14 @@ export default function App() {
                         value={editNameInput}
                         onChange={(e) => setEditNameInput(e.target.value)}
                         placeholder="가드너 이름"
-                        className="px-2 py-1 text-[10px] font-bold border border-emerald-100 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-emerald-50/20 w-24"
+                        className="px-2 py-1 text-3xs font-bold border border-emerald-100 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-emerald-50/20 w-24"
                         maxLength={20}
                         id="profile-name-input"
                       />
                       <select
                         value={editTitleInput}
                         onChange={(e) => setEditTitleInput(e.target.value)}
-                        className="px-2 py-1 text-[9px] font-semibold border border-emerald-100 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-emerald-50/20 text-emerald-800 w-24"
+                        className="px-2 py-1 text-4xs font-semibold border border-emerald-100 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-emerald-50/20 text-emerald-800 w-24"
                         id="profile-title-select"
                       >
                         <option value="초보 가드너 🌱">초보 가드너 🌱</option>
@@ -364,10 +375,10 @@ export default function App() {
                     </div>
                     <div className="flex flex-col text-left">
                       <div className="flex items-center space-x-1">
-                        <span className="text-[10px] font-bold text-emerald-950 truncate max-w-[80px]">{profileName}</span>
+                        <span className="text-3xs font-bold text-emerald-950 truncate max-w-[80px]">{profileName}</span>
                         <Edit className="w-2.5 h-2.5 text-emerald-700/40 group-hover:text-emerald-700 transition-colors shrink-0" />
                       </div>
-                      <span className="text-[8px] font-bold text-emerald-700 font-mono tracking-wide bg-emerald-500/10 px-1 py-0.25 rounded-md mt-0.5 inline-block whitespace-nowrap">
+                      <span className="text-4xs font-bold text-emerald-700 font-mono tracking-wide bg-emerald-500/10 px-1 py-0.25 rounded-md mt-0.5 inline-block whitespace-nowrap">
                         {gardenerTitle}
                       </span>
                     </div>
@@ -378,7 +389,7 @@ export default function App() {
                       onClick={(e) => e.stopPropagation()}
                       title="정원사 칭호 빠른 변경"
                     >
-                      <span className="text-[8px] font-bold text-emerald-900 dark:text-emerald-400 whitespace-nowrap ml-1 shrink-0">빠른 칭호:</span>
+                      <span className="text-4xs font-bold text-emerald-900 dark:text-emerald-400 whitespace-nowrap ml-1 shrink-0">빠른 칭호:</span>
                       <select
                         value={gardenerTitle}
                         onChange={async (e) => {
@@ -397,7 +408,7 @@ export default function App() {
                             }
                           }
                         }}
-                        className="px-1.5 py-0.5 text-[8px] font-bold text-emerald-800 dark:text-emerald-100 bg-white dark:bg-[#122A25] border border-emerald-200 dark:border-emerald-800/80 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer w-[110px] shadow-4xs"
+                        className="px-1.5 py-0.5 text-4xs font-bold text-emerald-800 dark:text-emerald-100 bg-white dark:bg-[#122A25] border border-emerald-200 dark:border-emerald-800/80 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer w-[110px] shadow-4xs"
                       >
                         <option value="초보 가드너 🌱" className="bg-white dark:bg-[#0A1613] text-emerald-950 dark:text-emerald-50">초보 가드너 🌱</option>
                         <option value="새싹 정원사 🌿" className="bg-white dark:bg-[#0A1613] text-emerald-950 dark:text-emerald-50">새싹 정원사 🌿</option>
@@ -413,7 +424,7 @@ export default function App() {
                     <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-emerald-150 p-3.5 rounded-2xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 origin-top-right z-100 space-y-2.5 text-left shadow-md">
                       <div className="flex items-center space-x-2 border-b border-emerald-100/50 pb-2">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        <span className="text-[9.5px] font-bold text-emerald-950">정원사 프로필 요약</span>
+                        <span className="text-3xs font-bold text-emerald-950">정원사 프로필 요약</span>
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-3xs">
@@ -426,12 +437,12 @@ export default function App() {
                         </div>
                         <div className="flex flex-col text-3xs pt-1.5 border-t border-emerald-50/60">
                           <span className="text-gray-500 font-medium mb-1">초록빛 안식처 입성일</span>
-                          <span className="font-mono font-bold text-emerald-900 text-[10px] bg-emerald-50/80 border border-emerald-100/40 py-1 rounded-md text-center block">
+                          <span className="font-mono font-bold text-emerald-900 text-3xs bg-emerald-50/80 border border-emerald-100/40 py-1 rounded-md text-center block">
                             {formatJoinDate(joinDate)}
                           </span>
                         </div>
                       </div>
-                      <p className="text-[7.5px] text-gray-500 leading-normal text-center italic border-t border-emerald-50/40 pt-1.5">
+                      <p className="text-4xs text-gray-500 leading-normal text-center italic border-t border-emerald-50/40 pt-1.5">
                         "오늘도 고생 많았어요, 함께 힘내요! 🌱"
                       </p>
                     </div>
@@ -447,7 +458,7 @@ export default function App() {
 
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 rounded-xl text-emerald-600 hover:text-red-600 hover:bg-red-50/50 transition-colors cursor-pointer shrink-0"
+                  className="p-2.5 rounded-xl text-emerald-600 hover:text-red-600 hover:bg-red-50/50 transition-colors cursor-pointer shrink-0"
                   title="정원 로그아웃"
                 >
                   <LogOut className="w-4 h-4" />
@@ -457,7 +468,7 @@ export default function App() {
               <button
                 onClick={handleLogin}
                 disabled={isLoggingIn}
-                className="inline-flex items-center space-x-1.5 bg-emerald-900 text-white hover:bg-emerald-950 disabled:bg-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center space-x-1.5 bg-emerald-900 text-white hover:bg-emerald-950 disabled:bg-emerald-300 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
                 <Cloud className="w-3.5 h-3.5 text-emerald-200" />
                 <span>{isLoggingIn ? '연결 중...' : 'Google Drive 연결'}</span>
@@ -503,9 +514,9 @@ export default function App() {
       <footer className="border-t border-emerald-100/40 py-8 bg-white/20 text-center space-y-2" id="app-footer">
         <div className="inline-flex items-center space-x-1 text-emerald-800">
           <Sprout className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-[10px] font-bold font-mono tracking-widest uppercase">The Error Detox Garden for Indie Devs</span>
+          <span className="text-3xs font-bold font-mono tracking-widest uppercase">The Error Detox Garden for Indie Devs</span>
         </div>
-        <p className="text-[10px] text-emerald-700/60 font-semibold max-w-md mx-auto leading-relaxed">
+        <p className="text-3xs text-emerald-700/60 font-semibold max-w-md mx-auto leading-relaxed">
           방구석 모니터 불빛 아래 홀로 밤을 지새우는 개발자분들을 위해 만들었습니다. 지친 에러에서 잠시 눈을 떼고, 자연의 소리와 함께 마음을 쉬어가세요.
         </p>
       </footer>
@@ -513,6 +524,8 @@ export default function App() {
       {isGuideOpen && (
         <GuideModal onClose={() => setIsGuideOpen(false)} />
       )}
+
+      <GardenDialog {...dialog.props} />
 
     </div>
   );

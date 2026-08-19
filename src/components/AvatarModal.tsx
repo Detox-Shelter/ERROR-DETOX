@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Camera, Upload, Check, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import GardenDialog, { useGardenDialog } from './GardenDialog';
 
 interface AvatarModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
   const [activeTab, setActiveTab] = useState<'upload' | 'camera' | 'preset'>('preset');
   const [selectedPhoto, setSelectedPhoto] = useState<string>(currentPhotoURL);
   const [isSaving, setIsSaving] = useState(false);
+  const dialog = useGardenDialog();
 
   // Camera stream states
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -103,7 +105,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert('이미지 크기는 최대 2MB까지 가능합니다.');
+        dialog.notify('사진이 너무 큽니다', '2MB 이하 이미지를 골라주세요.');
         return;
       }
       const reader = new FileReader();
@@ -125,7 +127,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
       onClose();
     } catch (err) {
       console.error('Failed to save avatar:', err);
-      alert('프로필 이미지 저장에 실패했습니다.');
+      dialog.notify('프로필 사진을 저장하지 못했습니다', '잠시 후 다시 시도해 주세요.');
     } finally {
       setIsSaving(false);
     }
@@ -173,14 +175,14 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
               id="avatar-preview-img"
             />
           </div>
-          <span className="text-[10px] text-emerald-800/60 font-bold uppercase tracking-wider font-mono">가드너의 새 얼굴</span>
+          <span className="text-3xs text-emerald-800/60 font-bold uppercase tracking-wider font-mono">가드너의 새 얼굴</span>
         </div>
 
         {/* Tab Controls */}
         <div className="grid grid-cols-3 gap-1 bg-emerald-900/5 p-1 rounded-xl border border-emerald-100/40">
           <button
             onClick={() => setActiveTab('preset')}
-            className={`py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+            className={`py-1.5 rounded-lg text-3xs font-bold transition-all cursor-pointer ${
               activeTab === 'preset' ? 'bg-white text-emerald-950 shadow-4xs' : 'text-emerald-800/60 hover:text-emerald-800'
             }`}
           >
@@ -188,7 +190,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
           </button>
           <button
             onClick={() => setActiveTab('upload')}
-            className={`py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+            className={`py-1.5 rounded-lg text-3xs font-bold transition-all cursor-pointer ${
               activeTab === 'upload' ? 'bg-white text-emerald-950 shadow-4xs' : 'text-emerald-800/60 hover:text-emerald-800'
             }`}
           >
@@ -196,7 +198,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
           </button>
           <button
             onClick={() => setActiveTab('camera')}
-            className={`py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+            className={`py-1.5 rounded-lg text-3xs font-bold transition-all cursor-pointer ${
               activeTab === 'camera' ? 'bg-white text-emerald-950 shadow-4xs' : 'text-emerald-800/60 hover:text-emerald-800'
             }`}
           >
@@ -208,7 +210,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
         <div className="bg-white/40 border border-emerald-100/40 p-4 rounded-2xl min-h-[160px] flex flex-col justify-center">
           {activeTab === 'preset' && (
             <div className="space-y-3">
-              <span className="block text-[9px] font-extrabold text-emerald-800/60 uppercase tracking-widest text-center font-mono">
+              <span className="block text-4xs font-extrabold text-emerald-800/60 uppercase tracking-widest text-center font-mono">
                 엄선된 자연 일러스트
               </span>
               <div className="grid grid-cols-4 gap-2">
@@ -246,13 +248,13 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
               <div className="p-3 bg-emerald-50 rounded-full text-emerald-800">
                 <Upload className="w-6 h-6" />
               </div>
-              <p className="text-[10px] text-center text-emerald-800/60 font-semibold leading-relaxed">
+              <p className="text-3xs text-center text-emerald-800/60 font-semibold leading-relaxed">
                 가드너를 대표할 나만의 이미지 파일을 선택해주세요. <br />
-                <span className="text-[9px] font-mono text-emerald-800/40">(최대 용량 2MB)</span>
+                <span className="text-4xs font-mono text-emerald-800/40">(최대 용량 2MB)</span>
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-1.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-xl text-[10px] font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
+                className="px-4 py-1.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-xl text-3xs font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
                 id="trigger-file-select"
               >
                 <ImageIcon className="w-3.5 h-3.5" />
@@ -281,7 +283,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
               ) : (
                 <div className="flex flex-col items-center space-y-2 py-4">
                   <Camera className="w-7 h-7 text-emerald-800/50" />
-                  <p className="text-[10px] text-emerald-800/60 font-semibold text-center leading-relaxed">
+                  <p className="text-3xs text-emerald-800/60 font-semibold text-center leading-relaxed">
                     실시간 카메라를 활성화하여 <br />
                     아바타 전용 스냅샷을 촬영해보세요!
                   </p>
@@ -289,7 +291,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
               )}
 
               {cameraError && (
-                <p className="text-[9px] text-red-600 font-bold text-center bg-red-50 px-2.5 py-1 rounded-lg">
+                <p className="text-4xs text-red-600 font-bold text-center bg-red-50 px-2.5 py-1 rounded-lg">
                   {cameraError}
                 </p>
               )}
@@ -298,7 +300,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
                 {!stream ? (
                   <button
                     onClick={startCamera}
-                    className="px-4 py-1.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-xl text-[10px] font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
+                    className="px-4 py-1.5 bg-emerald-900 text-white hover:bg-emerald-950 rounded-xl text-3xs font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
                     id="start-camera-btn"
                   >
                     <RefreshCw className="w-3 h-3" />
@@ -308,7 +310,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
                   <div className="flex space-x-1.5">
                     <button
                       onClick={capturePhoto}
-                      className="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
+                      className="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-3xs font-bold shadow-4xs cursor-pointer transition-all flex items-center space-x-1"
                       id="capture-snapshot-btn"
                     >
                       <Camera className="w-3.5 h-3.5" />
@@ -316,7 +318,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
                     </button>
                     <button
                       onClick={stopCamera}
-                      className="px-2.5 py-1.5 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 rounded-xl text-[10px] font-bold cursor-pointer transition-all"
+                      className="px-2.5 py-1.5 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 rounded-xl text-3xs font-bold cursor-pointer transition-all"
                       id="cancel-camera-btn"
                     >
                       끄기
@@ -336,7 +338,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
               onClose();
             }}
             disabled={isSaving}
-            className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-[10px] font-bold transition-all cursor-pointer text-center"
+            className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-3xs font-bold transition-all cursor-pointer text-center"
             id="avatar-cancel-action"
           >
             취소
@@ -344,7 +346,7 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-[10px] font-bold transition-all shadow-3xs cursor-pointer text-center flex items-center justify-center space-x-1"
+            className="flex-1 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-3xs font-bold transition-all shadow-3xs cursor-pointer text-center flex items-center justify-center space-x-1"
             id="avatar-save-action"
           >
             {isSaving ? (
@@ -358,6 +360,8 @@ export default function AvatarModal({ isOpen, onClose, currentPhotoURL, onSave }
           </button>
         </div>
       </motion.div>
+
+      <GardenDialog {...dialog.props} />
     </div>
   );
 }

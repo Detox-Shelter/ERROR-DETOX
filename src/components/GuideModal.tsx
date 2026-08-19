@@ -68,7 +68,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
               <div className="space-y-3.5">
                 {/* Step 1 */}
                 <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-3xs shrink-0 font-mono">
                     01
                   </div>
                   <div className="space-y-1">
@@ -81,7 +81,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
 
                 {/* Step 2 */}
                 <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-3xs shrink-0 font-mono">
                     02
                   </div>
                   <div className="space-y-1">
@@ -94,7 +94,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
 
                 {/* Step 3 */}
                 <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-3xs shrink-0 font-mono">
                     03
                   </div>
                   <div className="space-y-1">
@@ -107,7 +107,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
 
                 {/* Step 4 */}
                 <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-3xs shrink-0 font-mono">
                     04
                   </div>
                   <div className="space-y-1">
@@ -120,7 +120,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
 
                 {/* Step 5 */}
                 <div className="flex items-start space-x-3 bg-emerald-50/10 p-3.5 rounded-2xl border border-emerald-100/40">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold text-3xs shrink-0 font-mono">
                     05
                   </div>
                   <div className="space-y-1">
@@ -159,7 +159,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                     <span className="font-bold text-emerald-950 text-2xs flex items-center gap-1.5">
                       <span>🌿 유칼립투스 (Eucalyptus)</span>
                     </span>
-                    <span className="px-2 py-0.5 bg-emerald-100/70 text-emerald-800 text-[9px] rounded-md font-bold font-mono">스레드 / 동시성 제어</span>
+                    <span className="px-2 py-0.5 bg-emerald-100/70 text-emerald-800 text-4xs rounded-md font-bold font-mono">스레드 / 동시성 제어</span>
                   </div>
                   <p className="text-3xs text-gray-500 font-medium">
                     <strong className="text-emerald-900">식물 돌봄:</strong> 유칼립투스는 싱싱한 통풍과 규칙적이며 가벼운 물뿌리기를 좋아합니다. 잎사귀가 뒤엉켜 과습해지면 쉽게 썩습니다.<br/>
@@ -173,7 +173,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                     <span className="font-bold text-emerald-950 text-2xs flex items-center gap-1.5">
                       <span>🎋 대나무 새싹 (Bamboo)</span>
                     </span>
-                    <span className="px-2 py-0.5 bg-sky-100/70 text-sky-800 text-[9px] rounded-md font-bold font-mono">인프라 / 네트워크 연동</span>
+                    <span className="px-2 py-0.5 bg-sky-100/70 text-sky-800 text-4xs rounded-md font-bold font-mono">인프라 / 네트워크 연동</span>
                   </div>
                   <p className="text-3xs text-gray-500 font-medium">
                     <strong className="text-emerald-900">식물 돌봄:</strong> 대나무는 곧고 높은 수직 기둥을 뻗어 성장합니다. 매서운 태풍에도 흔들릴지언정 부러지지 않는 마디(Node)가 가장 핵심입니다.<br/>
@@ -187,7 +187,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                     <span className="font-bold text-emerald-950 text-2xs flex items-center gap-1.5">
                       <span>🪴 몬스테라 (Monstera)</span>
                     </span>
-                    <span className="px-2 py-0.5 bg-yellow-100/70 text-yellow-800 text-[9px] rounded-md font-bold font-mono">데이터베이스 / 메모리 고갈</span>
+                    <span className="px-2 py-0.5 bg-yellow-100/70 text-yellow-800 text-4xs rounded-md font-bold font-mono">데이터베이스 / 메모리 고갈</span>
                   </div>
                   <p className="text-3xs text-gray-500 font-medium">
                     <strong className="text-emerald-900">식물 돌봄:</strong> 몬스테라는 잎사귀가 커지면 스스로 잎에 구멍을 뚫어(찢잎) 아래 잎에 햇빛과 빗물이 도달하도록 돕습니다. 배수가 극히 우수해야 합니다.<br/>
@@ -201,7 +201,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                     <span className="font-bold text-emerald-950 text-2xs flex items-center gap-1.5">
                       <span>🍀 아이비 넝쿨 (Ivy)</span>
                     </span>
-                    <span className="px-2 py-0.5 bg-indigo-100/70 text-indigo-800 text-[9px] rounded-md font-bold font-mono">레거시 / 스파게티 코드</span>
+                    <span className="px-2 py-0.5 bg-indigo-100/70 text-indigo-800 text-4xs rounded-md font-bold font-mono">레거시 / 스파게티 코드</span>
                   </div>
                   <p className="text-3xs text-gray-500 font-medium">
                     <strong className="text-emerald-900">식물 돌봄:</strong> 아이비는 악조건 속에서도 벽과 지지대를 감싸며 끈질기게 생명력을 넓힙니다. 복잡하게 엉킨 줄기는 정기적으로 풀어주어야 합니다.<br/>
@@ -218,20 +218,20 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                 </span>
                 <div className="grid grid-cols-4 gap-2 text-center">
                   <div className="p-2 bg-white rounded-xl border border-emerald-50 space-y-1">
-                    <span className="text-emerald-800 font-bold block text-[10px]">1단계: 씨앗</span>
-                    <p className="text-[9px] text-gray-400">에러 퇴비를 영양분으로 첫 싹을 틔울 준비를 합니다.</p>
+                    <span className="text-emerald-800 font-bold block text-3xs">1단계: 씨앗</span>
+                    <p className="text-4xs text-gray-400">에러 퇴비를 영양분으로 첫 싹을 틔울 준비를 합니다.</p>
                   </div>
                   <div className="p-2 bg-white rounded-xl border border-emerald-50 space-y-1">
-                    <span className="text-emerald-800 font-bold block text-[10px]">2단계: 어린잎</span>
-                    <p className="text-[9px] text-gray-400">귀여운 아기 잎사귀가 자라며 처방전을 흡수합니다.</p>
+                    <span className="text-emerald-800 font-bold block text-3xs">2단계: 어린잎</span>
+                    <p className="text-4xs text-gray-400">귀여운 아기 잎사귀가 자라며 처방전을 흡수합니다.</p>
                   </div>
                   <div className="p-2 bg-white rounded-xl border border-emerald-50 space-y-1">
-                    <span className="text-emerald-800 font-bold block text-[10px]">3단계: 성장기</span>
-                    <p className="text-[9px] text-gray-400">푸른 줄기가 튼튼하게 자라나 존재감을 뽐냅니다.</p>
+                    <span className="text-emerald-800 font-bold block text-3xs">3단계: 성장기</span>
+                    <p className="text-4xs text-gray-400">푸른 줄기가 튼튼하게 자라나 존재감을 뽐냅니다.</p>
                   </div>
                   <div className="p-2 bg-white rounded-xl border border-emerald-50 space-y-1">
-                    <span className="text-emerald-800 font-bold block text-[10px]">4단계: 만개</span>
-                    <p className="text-[9px] text-gray-400">아름답게 완성된 치유목이 되어 정원을 지킵니다.</p>
+                    <span className="text-emerald-800 font-bold block text-3xs">4단계: 만개</span>
+                    <p className="text-4xs text-gray-400">아름답게 완성된 치유목이 되어 정원을 지킵니다.</p>
                   </div>
                 </div>
               </div>

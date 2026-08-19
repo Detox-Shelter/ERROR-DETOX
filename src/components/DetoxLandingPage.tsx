@@ -33,6 +33,7 @@ import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import GuideModal from './GuideModal';
 import CommunitySquare from './CommunitySquare';
+import GardenDialog, { useGardenDialog } from './GardenDialog';
 import RemedyMarkdown from './RemedyMarkdown';
 
 // Import our beautiful generated botanical images
@@ -69,6 +70,8 @@ interface GardenLog {
   prescription: string;
   growthStage: number; // 1 to 4 leaf
   seed?: string;
+  /** 처방 서버가 실패해 미리 써둔 문구로 채운 기록. 개인화된 처방전이 아니다. */
+  isFallback?: boolean;
 }
 
 // Static lists for seed species and zen reflections
@@ -155,7 +158,10 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
       }
     } catch (err) {
       console.error(err);
-      alert('정원 광장에 일지를 전송하는 중 문제가 발생했습니다.');
+      dialog.notify(
+        '정원 광장에 일지를 보내지 못했습니다',
+        err instanceof Error ? err.message : '잠시 후 다시 시도해 주세요.'
+      );
     } finally {
       setIsSharingToCommunity(false);
     }
@@ -176,7 +182,12 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
   const [prescription, setPrescription] = useState<string | null>(null);
   const [botanicalTitle, setBotanicalTitle] = useState('싱그러운 치유목');
   const [apiError, setApiError] = useState<string | null>(null);
+  /** 지금 보이는 처방전이 서버 실패로 채운 예비 문구인지. 화면에 그대로 밝힌다. */
+  const [isFallbackPrescription, setIsFallbackPrescription] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const dialog = useGardenDialog();
+  /** 폼 검증 실패 메시지. alert 대신 문제가 된 칸 아래에 붙인다. */
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Textarea Ref for Composting Garden
   const errorLogTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1202,17 +1213,22 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
   }, []);
 
   // Form handling: Turn error into custom botanical compost & sprout flower
-  const handleCompostSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 에러 배너의 다시 시도 버튼에서도 부르므로 이벤트는 선택 인자로 둔다.
+  const handleCompostSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!errorLog.trim() && !frustration.trim()) {
-      alert('마음 속의 답답함이나 아키텍처/에러 로그를 조금만 들려주세요!');
+      // 어느 칸을 채워야 하는지 그 자리에서 보여주고 포커스를 옮긴다.
+      setFormError('에러 메시지나 지금의 마음 중 하나는 적어주세요. 둘 다 비어 있으면 정원사가 읽을 것이 없습니다.');
+      errorLogTextareaRef.current?.focus();
       return;
     }
+    setFormError(null);
 
     setIsComposting(true);
     setIsSprouting(false);
     setPrescription(null);
     setApiError(null);
+    setIsFallbackPrescription(false);
 
     // Auto-trigger deep grounding breath to relax developer during compost
     setBreathPhase('inhale');
@@ -1257,6 +1273,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
         // Succeeded! Let's trigger a beautiful visual sprout animation
         setIsSprouting(true);
         setPrescription(data.text);
+        setIsFallbackPrescription(false);
         
         // Generate a poetic botanical title based on the selected seed
         const seedTitles: Record<string, string[]> = {
@@ -1327,6 +1344,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
       `;
       setPrescription(fallbackText);
       setIsSprouting(true);
+      setIsFallbackPrescription(true);
 
       const fallbackLog: GardenLog = {
         id: 'log_' + Date.now(),
@@ -1336,7 +1354,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
         botanicalTitle: finalTitle,
         prescription: fallbackText,
         growthStage: 3,
-        seed: resolvedSeed
+        seed: resolvedSeed,
+        isFallback: true
       };
       saveLogsToCache([fallbackLog, ...savedLogs]);
     } finally {
@@ -1370,7 +1389,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
           
           {/* Left Column: Exquisite Typography & Message */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-6" id="drift-hero-intro">
-            <div className="inline-flex items-center space-x-2 self-start bg-emerald-50 border border-emerald-150 px-3.5 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest text-emerald-900 uppercase">
+            <div className="inline-flex items-center space-x-2 self-start bg-emerald-50 border border-emerald-150 px-3.5 py-1 rounded-full text-3xs font-bold font-mono tracking-widest text-emerald-900 uppercase">
               <Leaf className="w-3 h-3 text-emerald-600 animate-pulse" />
               <span>THE ERROR DETOX SHELTER</span>
             </div>
@@ -1390,15 +1409,15 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
             <div className="grid grid-cols-3 gap-6 pt-4 border-t border-emerald-50 max-w-md" id="drift-stats">
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">100%</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">눈이 편안한 쉼터</span>
+                <span className="block text-3xs text-emerald-600/70 font-bold uppercase font-mono tracking-wider">눈이 편안한 쉼터</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">HTML5</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">마음을 지키는 소리</span>
+                <span className="block text-3xs text-emerald-600/70 font-bold uppercase font-mono tracking-wider">마음을 지키는 소리</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-emerald-950 font-display">Gemini</span>
-                <span className="block text-[10px] text-emerald-600/70 font-bold uppercase font-mono tracking-wider">맞춤형 에러 처방전</span>
+                <span className="block text-3xs text-emerald-600/70 font-bold uppercase font-mono tracking-wider">맞춤형 에러 처방전</span>
               </div>
             </div>
 
@@ -1453,7 +1472,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   <Heart className="w-4 h-4 text-emerald-600 animate-pulse" />
                   <span className="text-2xs font-bold text-emerald-950">가든 숲속 사운드 믹서</span>
                   {soundChannels.some((c) => c.active) && (
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                    <span className="bg-emerald-100 text-emerald-800 text-3xs font-mono font-bold px-1.5 py-0.5 rounded-full animate-pulse">
                       {soundChannels.filter((c) => c.active).length}개 재생 중
                     </span>
                   )}
@@ -1462,7 +1481,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   {soundChannels.some((c) => c.active) && (
                     <button
                       onClick={stopAllChannels}
-                      className="text-[10px] font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-md transition-colors border border-rose-200/50"
+                      className="text-3xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-md transition-colors border border-rose-200/50"
                       title="모든 사운드 끄기"
                     >
                       전체 정지
@@ -1474,22 +1493,22 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
               {/* Quick Sound Presets */}
               <div className="my-2.5 relative z-10 flex flex-wrap gap-1.5 items-center">
-                <span className="text-[10px] font-bold text-emerald-800/80 mr-1">빠른 추천:</span>
+                <span className="text-3xs font-bold text-emerald-800/80 mr-1">빠른 추천:</span>
                 <button
                   onClick={() => applyPreset('rain_wind')}
-                  className="px-2.5 py-1 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-[10px] font-semibold rounded-lg border border-emerald-200/60 transition-all shadow-2xs hover:scale-102"
+                  className="px-3 py-2 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-3xs font-semibold rounded-lg border border-emerald-200/60 transition-all shadow-2xs hover:scale-102"
                 >
                   🌧️ 비 & 숲바람
                 </button>
                 <button
                   onClick={() => applyPreset('fire_night')}
-                  className="px-2.5 py-1 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-[10px] font-semibold rounded-lg border border-amber-200/60 transition-all shadow-2xs hover:scale-102"
+                  className="px-3 py-2 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-3xs font-semibold rounded-lg border border-amber-200/60 transition-all shadow-2xs hover:scale-102"
                 >
                   🔥 모닥불 & 풀벌레
                 </button>
                 <button
                   onClick={() => applyPreset('ocean_breeze')}
-                  className="px-2.5 py-1 bg-sky-50/80 hover:bg-sky-100 text-sky-900 text-[10px] font-semibold rounded-lg border border-sky-200/60 transition-all shadow-2xs hover:scale-102"
+                  className="px-3 py-2 bg-sky-50/80 hover:bg-sky-100 text-sky-900 text-3xs font-semibold rounded-lg border border-sky-200/60 transition-all shadow-2xs hover:scale-102"
                 >
                   🌊 밤바다 & 미풍
                 </button>
@@ -1509,7 +1528,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => toggleChannel(ch.id)}
-                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-3xs font-bold transition-all border ${
+                        className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg text-3xs font-bold transition-all border ${
                           ch.active
                             ? 'bg-emerald-850 text-white border-emerald-900 shadow-xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
@@ -1520,7 +1539,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                       </button>
 
                       {ch.active && (
-                        <span className="text-[10px] font-mono font-bold text-emerald-800">
+                        <span className="text-3xs font-mono font-bold text-emerald-800">
                           {Math.round((ch.gain / 0.4) * 100)}%
                         </span>
                       )}
@@ -1528,7 +1547,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                     {ch.active && (
                       <div className="flex items-center space-x-1.5 mt-2 px-1">
-                        <span className="text-[10px] text-emerald-700 font-bold">-</span>
+                        <span className="text-3xs text-emerald-700 font-bold">-</span>
                         <input
                           type="range"
                           min="0.01"
@@ -1538,7 +1557,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                           onChange={(e) => adjustChannelVolume(ch.id, parseFloat(e.target.value))}
                           className="w-full accent-emerald-800 h-1.5 rounded-lg bg-emerald-200/60 cursor-pointer"
                         />
-                        <span className="text-[10px] text-emerald-700 font-bold">+</span>
+                        <span className="text-3xs text-emerald-700 font-bold">+</span>
                       </div>
                     )}
                   </div>
@@ -1558,10 +1577,14 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   <span className="text-2xs font-bold text-emerald-950">🌧️ 펜타토닉 빗방울 연주기</span>
                 </div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[10px] font-bold text-emerald-800">자동 비</span>
+                  <span className="text-3xs font-bold text-emerald-800">자동 비</span>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={autoRain}
+                    aria-label="자동 비 연주"
                     onClick={() => setAutoRain(!autoRain)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full after:absolute after:-inset-2.5 after:content-[''] border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${
                       autoRain ? 'bg-emerald-700' : 'bg-gray-200'
                     }`}
                   >
@@ -1586,7 +1609,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                 <div className="text-center space-y-1 relative z-10 pointer-events-none opacity-60">
                   <Sparkles className="w-5 h-5 mx-auto text-emerald-400 animate-spin" style={{ animationDuration: '8s' }} />
                   <span className="block text-3xs font-bold text-emerald-100 font-mono">PENTATONIC RAIN HARP</span>
-                  <p className="text-[9px] text-emerald-300">유리창을 두드리면 맑은 빗물 소리가 연주됩니다</p>
+                  <p className="text-4xs text-emerald-300">유리창을 두드리면 맑은 빗물 소리가 연주됩니다</p>
                 </div>
 
                 {/* Animated Ripples */}
@@ -1603,7 +1626,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     <div className="absolute w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
                     
                     {/* Note Tag floating up */}
-                    <span className="absolute -top-6 bg-emerald-900/90 text-emerald-200 text-[8px] font-mono font-bold px-1 py-0.5 rounded border border-emerald-700/50 shadow-sm animate-[bounce_0.6s_ease-out]">
+                    <span className="absolute -top-6 bg-emerald-900/90 text-emerald-200 text-4xs font-mono font-bold px-1 py-0.5 rounded border border-emerald-700/50 shadow-sm animate-[bounce_0.6s_ease-out]">
                       {ripple.noteName}
                     </span>
                   </div>
@@ -1668,7 +1691,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                   <div className="space-y-1.5 relative z-10">
                     <span className="text-4xs font-bold font-mono px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded uppercase">1단계: 씨앗 가꾸기</span>
-                    <h3 className="text-lg font-bold text-emerald-950 font-display">에러 묻고 정원 가꾸기 🪴</h3>
+                    <h2 className="text-lg font-bold text-emerald-950 font-display">에러 묻고 정원 가꾸기 🪴</h2>
                     <p className="text-3xs text-emerald-800/80 leading-relaxed font-medium">
                       빨간 에러 메시지나 나를 괴롭히는 버그를 가만히 정원 흙 속에 묻어주세요. 
                       따스한 마음 위로와 함께 싱그러운 식물 가이드로 바꾸어 드립니다.
@@ -1677,12 +1700,14 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                   <form onSubmit={handleCompostSubmit} className="space-y-4 pt-3 relative z-10" id="compost-form">
                     <div className="space-y-1.5">
-                      <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
+                      <label htmlFor="error-compost-textarea" className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
                         나를 힘들게 한 에러 메시지나 코드 (에러 코드)
                       </label>
                       <textarea
                         ref={errorLogTextareaRef}
                         id="error-compost-textarea"
+                        aria-invalid={formError ? true : undefined}
+                        aria-describedby={formError ? 'compost-form-error' : undefined}
                         value={errorLog}
                         onChange={(e) => setErrorLog(e.target.value)}
                         placeholder="예: OutOfMemoryError, DB Connection Timeout, 혹은 머리를 아프게 하는 코드 내용을 적어주세요..."
@@ -1691,11 +1716,12 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
+                      <label htmlFor="frustration-input" className="block text-3xs font-bold text-emerald-800 uppercase tracking-wider font-mono">
                         지금 내 솔직한 기분이나 힘든 점 (마음 일기)
                       </label>
                       <input
                         type="text"
+                        id="frustration-input"
                         value={frustration}
                         onChange={(e) => setFrustration(e.target.value)}
                         placeholder="예: 오늘 안에 끝내고 싶은데 3시간째 이 에러로 퇴근이 늦어져 머리가 답답합니다."
@@ -1723,11 +1749,21 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                             }`}
                           >
                             <span className="text-2xs font-extrabold text-emerald-950 block">{seed.label}</span>
-                            <span className="text-[9px] text-emerald-800/70 mt-0.5 leading-tight block">{seed.desc}</span>
+                            <span className="text-4xs text-emerald-800/70 mt-0.5 leading-tight block">{seed.desc}</span>
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    {formError && (
+                      <p
+                        role="alert"
+                        className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 leading-relaxed"
+                        id="compost-form-error"
+                      >
+                        {formError}
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-end pt-2">
                       <button
@@ -1761,10 +1797,10 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-yellow-300/10 to-transparent pointer-events-none"></div>
 
                   <div className="text-center space-y-1 relative z-10">
-                    <span className="text-[10px] font-mono font-extrabold text-emerald-800 uppercase tracking-wider block">
+                    <span className="text-3xs font-mono font-extrabold text-emerald-800 uppercase tracking-wider block">
                       Grounding Trainer
                     </span>
-                    <h3 className="text-xs font-bold text-emerald-950">가든 4-4-4 심호흡 조율기</h3>
+                    <h2 className="text-xs font-bold text-emerald-950">가든 4-4-4 심호흡 조율기</h2>
                     <p className="text-3xs text-emerald-800/80 max-w-xs mx-auto">
                       에러가 퇴비로 발효되는 동안 화면의 원형 고리의 흐름에 가만히 시선을 맞추고 숨을 들이마시고 정지하고 내쉬어 보세요.
                     </p>
@@ -1814,12 +1850,12 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                       {breathPhase === 'idle' ? (
                         <div className="flex flex-col items-center space-y-1">
                           <Heart className="w-6 h-6 text-emerald-600 animate-pulse" />
-                          <span className="text-[10px] font-bold">호흡 대기</span>
+                          <span className="text-3xs font-bold">호흡 대기</span>
                         </div>
                       ) : (
                         <div className="text-center">
                           <span className="text-xl font-extrabold font-mono block">{breathSeconds}</span>
-                          <span className="text-[8px] font-bold uppercase tracking-wider block opacity-70">
+                          <span className="text-4xs font-bold uppercase tracking-wider block opacity-70">
                             {breathPhase}
                           </span>
                         </div>
@@ -1829,7 +1865,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                   {/* Natural Sound Selector for Meditation */}
                   <div className="w-full max-w-xs space-y-2 py-3 border-t border-emerald-100/50 relative z-10">
-                    <span className="block text-[9px] font-bold text-emerald-800/80 uppercase tracking-widest text-center font-mono">
+                    <span className="block text-4xs font-bold text-emerald-800/80 uppercase tracking-widest text-center font-mono">
                       명상 배경음 선택 (Grounding Sounds)
                     </span>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -1849,7 +1885,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                             }
                           }
                         }}
-                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                        className={`py-1.5 px-2 rounded-xl border text-3xs font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                           activeMeditationSound === 'rain'
                             ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
@@ -1878,7 +1914,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                             }
                           }
                         }}
-                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                        className={`py-1.5 px-2 rounded-xl border text-3xs font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                           activeMeditationSound === 'forest'
                             ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
@@ -1907,7 +1943,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                             }
                           }
                         }}
-                        className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+                        className={`py-1.5 px-2 rounded-xl border text-3xs font-bold transition-all flex flex-col items-center justify-center space-y-1 cursor-pointer ${
                           activeMeditationSound === 'ocean'
                             ? 'bg-emerald-900 text-white border-emerald-950 shadow-3xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
@@ -1922,11 +1958,11 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     </div>
 
                     {breathPhase === 'idle' ? (
-                      <p className="text-[9px] text-emerald-800/60 text-center font-medium">
+                      <p className="text-4xs text-emerald-800/60 text-center font-medium">
                         호흡을 시작하면 선택한 자연의 소리가 자동으로 흐릅니다.
                       </p>
                     ) : (
-                      <p className="text-[9px] text-emerald-800/80 text-center font-semibold flex items-center justify-center space-x-1 animate-pulse">
+                      <p className="text-4xs text-emerald-800/80 text-center font-semibold flex items-center justify-center space-x-1 animate-pulse">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1"></span>
                         <span>자연 음향이 흘러나오는 중...</span>
                       </p>
@@ -1968,6 +2004,38 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
               </div>
 
             </div>
+
+            {/* 처방 서버가 실패했을 때. 예비 문구를 보여주더라도 그 사실을 감추지 않는다. */}
+            {apiError && (
+              <div
+                role="alert"
+                className="bg-amber-50 border border-amber-200 rounded-2xl p-5 sm:p-6 space-y-3"
+                id="prescription-error"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-base leading-none mt-0.5" aria-hidden="true">🌫️</span>
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-amber-900 font-serif">
+                      정원사가 이번 에러를 직접 읽지 못했습니다
+                    </h3>
+                    <p className="text-xs text-amber-900 leading-relaxed">
+                      {isFallbackPrescription
+                        ? '아래 처방전은 씨앗에 맞춰 미리 준비해 둔 예비 문구입니다. 적어주신 에러를 분석한 결과가 아닙니다.'
+                        : '처방전을 받아오지 못했습니다.'}
+                    </p>
+                    <p className="text-2xs text-amber-800 font-mono break-words">{apiError}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCompostSubmit()}
+                  disabled={isComposting}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-amber-900 text-amber-50 rounded-xl text-xs font-bold hover:bg-amber-950 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isComposting ? '다시 시도하는 중...' : '다시 시도하기'}
+                </button>
+              </div>
+            )}
 
             {/* Dynamic SPROUT Bloom Output Panel (When Gemini completes compost) */}
             <AnimatePresence>
@@ -2024,14 +2092,19 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     
                     {/* Left 8 cols: Prescribed Wisdom */}
                     <div className="lg:col-span-8 space-y-6">
-                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-emerald-50/60 shadow-2xs">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-emerald-50/60 shadow-2xs space-y-4">
+                        {isFallbackPrescription && (
+                          <p className="text-2xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            예비 문구입니다. 적어주신 에러를 분석한 결과가 아닙니다.
+                          </p>
+                        )}
                         <RemedyMarkdown text={prescription} />
                       </div>
                     </div>
 
                     {/* Right 4 cols: Interactive Terrarium Visualization */}
                     <div className="lg:col-span-4 bg-white border border-emerald-50 rounded-2xl p-5 space-y-4 text-center shadow-3xs">
-                      <span className="text-[9px] font-mono font-bold text-emerald-500 uppercase tracking-widest block">Virtual Growth State</span>
+                      <span className="text-4xs font-mono font-bold text-emerald-500 uppercase tracking-widest block">Virtual Growth State</span>
                       
                       {/* Beautiful glowing SVG plant growth indicator */}
                       <div className="w-full h-44 bg-gradient-to-b from-emerald-50/20 to-emerald-50/60 rounded-xl border border-emerald-100 flex items-center justify-center overflow-hidden relative">
@@ -2093,7 +2166,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                       <div className="space-y-1">
                         <span className="text-3xs font-extrabold text-emerald-900 font-mono">성장 완료: 4단계 치유 묘목 🪴</span>
-                        <p className="text-[10px] text-gray-400 leading-relaxed">
+                        <p className="text-3xs text-gray-400 leading-relaxed">
                           답답했던 에러를 털어내고 피어난 소중한 치유의 식물입니다. 이 기록은 '내 보관함'에 소중히 보존되어 언제든 다시 꺼내볼 수 있습니다.
                         </p>
                       </div>
@@ -2148,7 +2221,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                           )}
                         </button>
                         
-                        <p className="text-[9px] text-gray-400 font-medium">
+                        <p className="text-4xs text-gray-400 font-medium">
                           처방전 엽서를 복사하거나 커뮤니티 광장에 공유해서, 방구석에서 함께 고군분투하는 다른 개발자들과 따뜻한 응원을 나눠보세요.
                         </p>
                       </div>
@@ -2174,16 +2247,21 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-emerald-950 font-display">나의 디톡스 처방전 보관함</h3>
+                <h2 className="text-base font-bold text-emerald-950 font-display">나의 디톡스 처방전 보관함</h2>
                 <p className="text-3xs text-emerald-700/80 mt-0.5">그동안 에러를 털어내며 정성껏 키워낸 나만의 치유 및 디버깅 기록들입니다.</p>
               </div>
 
               {savedLogs.length > 0 && (
                 <button
                   onClick={() => {
-                    if (window.confirm("그동안의 모든 식물 처방전 내역을 영구히 삭제하시겠습니까?")) {
-                      saveLogsToCache([]);
-                    }
+                    dialog.confirm({
+                      kind: 'danger',
+                      title: '보관함을 비울까요?',
+                      message: `처방전 ${savedLogs.length}건이 영구히 사라집니다. 되돌릴 수 없습니다.`,
+                      confirmLabel: '비우기',
+                      cancelLabel: '그대로 두기',
+                      onConfirm: () => saveLogsToCache([]),
+                    });
                   }}
                   className="px-3 py-1.5 text-3xs border border-red-100 text-red-700 hover:bg-red-50 rounded-lg font-bold"
                 >
@@ -2201,7 +2279,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                 <div className="absolute top-0 w-40 h-40 bg-yellow-100/20 blur-2xl rounded-full pointer-events-none" />
                 
                 <div className="text-center space-y-1 relative z-10 w-full border-b border-gray-50 pb-3">
-                  <span className="text-[9px] font-mono font-bold text-emerald-600 tracking-widest uppercase block">Virtual Sprout Ecosystem</span>
+                  <span className="text-4xs font-mono font-bold text-emerald-600 tracking-widest uppercase block">Virtual Sprout Ecosystem</span>
                   <h4 className="text-xs font-extrabold text-emerald-950 font-serif">나만의 에러 퇴비 테라리움</h4>
                 </div>
 
@@ -2316,13 +2394,13 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   </svg>
 
                   {/* Absolute glowing badge with current Level inside */}
-                  <div className="absolute bottom-1 right-4 bg-emerald-800 text-white font-mono text-[9px] font-black px-2 py-1 rounded-lg border border-emerald-600 shadow-sm">
+                  <div className="absolute bottom-1 right-4 bg-emerald-800 text-white font-mono text-4xs font-black px-2 py-1 rounded-lg border border-emerald-600 shadow-sm">
                     LV. {gardenLevel}
                   </div>
                 </div>
 
                 <div className="text-center space-y-1 w-full pt-2">
-                  <span className="text-[10px] text-gray-500 font-medium">
+                  <span className="text-3xs text-gray-500 font-medium">
                     {totalPurifications === 0 
                       ? "아직 퇴비화된 에러가 없습니다. 쉼터에서 시작하세요!"
                       : `정원에 총 ${totalPurifications}종의 치유 식물이 자생 중입니다.`
@@ -2341,7 +2419,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                       <span className="text-4xs font-mono font-extrabold text-emerald-500 uppercase block tracking-wider">GREENHOUSE ECO SYSTEM</span>
                       <h4 className="text-xs font-black text-emerald-950">{levelTitle}</h4>
                     </div>
-                    <span className="text-[10px] font-bold font-mono text-emerald-800">
+                    <span className="text-3xs font-bold font-mono text-emerald-800">
                       정화 수치: {purificationScore} EP
                     </span>
                   </div>
@@ -2356,7 +2434,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     />
                   </div>
 
-                  <div className="flex justify-between text-[9px] font-bold text-gray-400">
+                  <div className="flex justify-between text-4xs font-bold text-gray-400">
                     <span>성장도 {levelProgressPercent}%</span>
                     <span className="text-emerald-700">{nextMilestone}</span>
                   </div>
@@ -2364,7 +2442,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                 {/* Collected Badges block */}
                 <div className="space-y-2.5">
-                  <h5 className="text-[10px] font-black text-emerald-950 font-sans tracking-wide uppercase">정원 수집 치유 배지</h5>
+                  <h5 className="text-3xs font-black text-emerald-950 font-sans tracking-wide uppercase">정원 수집 치유 배지</h5>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {badgesList.map((b) => (
@@ -2381,10 +2459,10 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                         </span>
                         
                         <div className="space-y-0.5">
-                          <span className={`text-[10px] font-extrabold block leading-tight ${b.unlocked ? 'text-emerald-950' : 'text-gray-400'}`}>
+                          <span className={`text-3xs font-extrabold block leading-tight ${b.unlocked ? 'text-emerald-950' : 'text-gray-400'}`}>
                             {b.title.replace(/[🌱🏆🌿🎋🪴🍀]/g, '').trim()}
                           </span>
-                          <span className="text-[8px] text-gray-400 leading-tight block">
+                          <span className="text-4xs text-gray-400 leading-tight block">
                             {b.desc}
                           </span>
                         </div>
@@ -2410,8 +2488,12 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                   <div key={log.id} className="bg-white border border-emerald-50 rounded-3xl p-5 shadow-3xs flex flex-col justify-between hover:border-emerald-100 transition-all space-y-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-mono text-gray-400">{log.timestamp}</span>
-                        <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-full">Sprouted</span>
+                        <span className="text-4xs font-mono text-gray-400">{log.timestamp}</span>
+                        {log.isFallback ? (
+                          <span className="text-4xs font-bold px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-full" title="처방 서버가 실패해 예비 문구로 채운 기록입니다">예비 문구</span>
+                        ) : (
+                          <span className="text-4xs font-bold px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-full">Sprouted</span>
+                        )}
                       </div>
 
                       <div className="space-y-1">
@@ -2425,7 +2507,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                           <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3 my-2.5 text-3xs text-amber-950 font-serif relative">
                             <div className="flex items-center space-x-1.5 mb-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              <span className="text-[8px] font-black font-mono text-amber-700 uppercase tracking-wider">지친 마음 한 토막</span>
+                              <span className="text-4xs font-black font-mono text-amber-700 uppercase tracking-wider">지친 마음 한 토막</span>
                             </div>
                             <p className="italic pl-1">“{log.frustration}”</p>
                           </div>
@@ -2445,6 +2527,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                       onClick={() => {
                         setBotanicalTitle(log.botanicalTitle);
                         setPrescription(log.prescription);
+                        setIsFallbackPrescription(!!log.isFallback);
+                        setApiError(null);
                         setIsSprouting(true);
                         setActiveTab('garden');
                         // Scroll up to see the sprout view
@@ -2489,7 +2573,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
             id="botanical-philosophy"
           >
             <div className="text-center max-w-xl mx-auto space-y-3">
-              <h3 className="text-base font-bold text-emerald-950 font-display">방구석 개발자를 위한 생각 정리법</h3>
+              <h2 className="text-base font-bold text-emerald-950 font-display">방구석 개발자를 위한 생각 정리법</h2>
               <p className="text-3xs text-emerald-800/80">
                 복잡한 소프트웨어 아키텍처와 자연의 섭리는 서로 닮아 있습니다. 문제 해결이 막힐 때 가볍게 읽어보세요.
               </p>
@@ -2541,6 +2625,8 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
       {/* Exquisite Floating Guide Modal */}
       {isGuideOpen && <GuideModal onClose={() => setIsGuideOpen(false)} />}
+
+      <GardenDialog {...dialog.props} />
 
       {/* Floating Action Button for instant composting access with luxurious motion */}
       <AnimatePresence>
