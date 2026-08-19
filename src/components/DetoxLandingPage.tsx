@@ -1509,7 +1509,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => toggleChannel(ch.id)}
-                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1.2 rounded-lg text-3xs font-bold transition-all border ${
+                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-3xs font-bold transition-all border ${
                           ch.active
                             ? 'bg-emerald-850 text-white border-emerald-900 shadow-xs'
                             : 'bg-white text-emerald-800 border-emerald-100 hover:bg-emerald-50'
@@ -1996,7 +1996,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
 
                       <div>
                         <span className="text-3xs font-bold font-mono text-emerald-600 block uppercase tracking-wider">YOUR RETRIEVED COMPOST SPECIES</span>
-                        <h4 className="text-md font-bold text-emerald-950 font-serif flex items-center space-x-1.5">
+                        <h4 className="text-base font-bold text-emerald-950 font-serif flex items-center space-x-1.5">
                           <span className="text-emerald-800 font-semibold">{botanicalTitle}</span>
                           <span className="text-xs text-emerald-600 font-normal">가 피어났습니다 🌸</span>
                         </h4>
@@ -2174,7 +2174,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-md font-bold text-emerald-950 font-display">나의 디톡스 처방전 보관함</h3>
+                <h3 className="text-base font-bold text-emerald-950 font-display">나의 디톡스 처방전 보관함</h3>
                 <p className="text-3xs text-emerald-700/80 mt-0.5">그동안 에러를 털어내며 정성껏 키워낸 나만의 치유 및 디버깅 기록들입니다.</p>
               </div>
 
@@ -2489,7 +2489,7 @@ export default function DetoxLandingPage({ user, onLogin, onLogout, customDispla
             id="botanical-philosophy"
           >
             <div className="text-center max-w-xl mx-auto space-y-3">
-              <h3 className="text-md font-bold text-emerald-950 font-display">방구석 개발자를 위한 생각 정리법</h3>
+              <h3 className="text-base font-bold text-emerald-950 font-display">방구석 개발자를 위한 생각 정리법</h3>
               <p className="text-3xs text-emerald-800/80">
                 복잡한 소프트웨어 아키텍처와 자연의 섭리는 서로 닮아 있습니다. 문제 해결이 막힐 때 가볍게 읽어보세요.
               </p>

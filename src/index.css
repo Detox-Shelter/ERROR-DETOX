@@ -6,6 +6,12 @@
   --font-serif: "Gowun Batang", serif;
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* 기본 팔레트에 없는 중간 눈금. @theme 에 등록해야 text-/border-/via- 같은
+     모든 유틸리티와 슬래시 불투명도 변형까지 Tailwind 가 알아서 만들어 준다.
+     클래스를 하나씩 손으로 쓰면 via-emerald-850 처럼 빠뜨린 조합이 조용히 죽는다. */
+  --color-emerald-150: #bcf3da;
+  --color-emerald-850: #065741;
 }
 
 @layer utilities {
@@ -49,14 +55,6 @@
   --tw-backdrop-blur: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
-}
-
-/* emerald 150과 850. 기본 팔레트에 없는 중간 눈금이라 같이 채워 둔다. */
-.border-emerald-150 {
-  border-color: #bcf3da;
-}
-.text-emerald-850 {
-  color: #065741;
 }
 
 /* ==========================================================================
